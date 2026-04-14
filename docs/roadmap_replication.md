@@ -1,7 +1,6 @@
 # Project Roadmap
 
-This document defines every task needed to replicate the AXIOM paper and complete the
-CS 677 final project. Each task is self-contained: it states what to build, where the
+This document defines every task needed to replicate the AXIOM paper. Each task is self-contained: it states what to build, where the
 code lives, what math is involved, what to test, and what to document. Point an LLM
 agent to a specific task by saying:
 

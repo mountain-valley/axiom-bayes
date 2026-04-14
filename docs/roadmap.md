@@ -31,8 +31,8 @@ with details on what was done, what worked, and any open issues. If the checklis
 and the log disagree, trust the log.
 
 ### Phase 1: Bayesian Mixture Models for Object Perception
-- [ ] Task 1 — sMM (slot mixture model)
-- [ ] Task 2 — iMM (identity mixture model)
+- [x] Task 1 — sMM (slot mixture model)
+- [x] Task 2 — iMM (identity mixture model)
 - [ ] Task 3 — Phase 1 experiments and figures
 
 ### Phase 2: Variational Inference for Dynamics Learning
@@ -103,6 +103,7 @@ using conjugate Bayesian mixture models, and have figures showing it works.
 **File:** `axiom/models/smm.py`
 **Tests:** `tests/test_smm.py`
 **Depends on:** nothing
+**Status:** Completed (2026-04-14)
 
 **What to build:** Implement the `SlotMixtureModel` class. The sMM is a Gaussian
 mixture model that parses an RGB image into object-centric slot latents.
@@ -138,6 +139,7 @@ is the same conjugate EM from class, applied to image segmentation.
 **File:** `axiom/models/imm.py`
 **Tests:** `tests/test_imm.py`
 **Depends on:** Task 1
+**Status:** Completed (2026-04-14)
 
 **What to build:** Implement the `IdentityMixtureModel` class. The iMM assigns a
 discrete identity code (object type) to each slot from its color and shape features,
