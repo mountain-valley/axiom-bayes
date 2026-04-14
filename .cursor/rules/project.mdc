@@ -12,7 +12,7 @@ This project studies whether the Bayesian components of AXIOM (Heins et al., 202
 updating, mixture-based latent dynamics, and uncertainty-aware action selection — can be replicated
 in a simplified game setting, and evaluates which components most affect sample efficiency. The
 scope is a Bayesian core slice of AXIOM tested on 1-2 Gameworld environments, not the full
-10-game benchmark. The focus is on understanding and demonstrating the Bayesian machinery at an academic but accessible level. A full-benchmark roadmap is in `docs/roadmap_extended.md`.
+10-game benchmark. The focus is on understanding and demonstrating the Bayesian machinery at an academic but accessible level. A full-benchmark roadmap is in `docs/roadmap_replication.md`.
 
 ## Repository Layout
 
@@ -54,7 +54,7 @@ scope is a Bayesian core slice of AXIOM tested on 1-2 Gameworld environments, no
 - The task breakdown is in `docs/roadmap.md` (13 tasks across 6 phases, scoped to the Bayesian core).
 - To start a task, read the roadmap entry for the task number and follow its instructions.
 - Check `docs/replication_log.md` first to see what has already been completed.
-- The full 10-game replication roadmap is preserved in `docs/roadmap_extended.md`.
+- The full 10-game replication roadmap is preserved in `docs/roadmap_replication.md`.
 
 ## Replication Log
 

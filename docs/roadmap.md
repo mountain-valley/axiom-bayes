@@ -1,18 +1,16 @@
 # Project Roadmap
 
-This project studies whether the Bayesian components of AXIOM — variational updating,
-mixture-based latent dynamics, and uncertainty-aware action selection — can be replicated
-in a simplified game setting, and evaluates which components most affect sample efficiency.
+This project studies whether the Bayesian components of AXIOM (Heins et al., 2025) —
+variational updating, mixture-based latent dynamics, and uncertainty-aware action
+selection — can be replicated in a simplified game setting, and evaluates which
+components most affect sample efficiency.
 
-The scope is deliberately narrowed from a full AXIOM replication to a **Bayesian core
-slice**: implement the mixture models with conjugate priors, variational inference, online
-structure learning (growing + Bayesian Model Reduction), and uncertainty-aware planning.
-Test on 1-2 Gameworld environments, not the full 10-game benchmark. The focus is on
-understanding and demonstrating the Bayesian machinery, not on matching every number
-in the paper.
+**Modular milestone structure:** Each phase ends with its own experiments and figures,
+so you can write a report at any stopping point. Later phases build on earlier ones
+and make the story richer, but no phase is wasted. If time runs short, stop at the
+latest completed phase and write up what you have.
 
-The full 10-game, all-baselines replication roadmap is preserved in `docs/roadmap_extended.md`
-for reference or future extension.
+The full 10-game replication roadmap is preserved in `docs/roadmap_replication.md`.
 
 Each task below is self-contained. Point an LLM agent to a specific task by saying:
 
@@ -32,64 +30,73 @@ actually been completed is `docs/replication_log.md` — it contains dated entri
 with details on what was done, what worked, and any open issues. If the checklist
 and the log disagree, trust the log.
 
-### Phase 1: Bayesian Mixture Models
+### Phase 1: Bayesian Mixture Models for Object Perception
 - [ ] Task 1 — sMM (slot mixture model)
 - [ ] Task 2 — iMM (identity mixture model)
-- [ ] Task 3 — tMM (transition mixture model)
+- [ ] Task 3 — Phase 1 experiments and figures
 
-### Phase 2: Variational Inference
-- [ ] Task 4 — Coordinate-ascent VI loop (E-step + M-step)
-- [ ] Task 5 — rMM (recurrent mixture model)
+### Phase 2: Variational Inference for Dynamics Learning
+- [ ] Task 4 — tMM (transition mixture model)
+- [ ] Task 5 — Coordinate-ascent VI loop
+- [ ] Task 6 — Phase 2 experiments and figures
 
-### Phase 3: Structure Learning
-- [ ] Task 6 — Online model expansion (growing heuristic)
-- [ ] Task 7 — Bayesian Model Reduction (BMR)
+### Phase 3: Nonparametric Bayes — Growing and Pruning
+- [ ] Task 7 — rMM (recurrent mixture model)
+- [ ] Task 8 — Online model expansion
+- [ ] Task 9 — Bayesian Model Reduction (BMR)
+- [ ] Task 10 — Phase 3 experiments and figures
 
-### Phase 4: Uncertainty-Aware Planning
-- [ ] Task 8 — Expected free energy planner (utility + information gain)
+### Phase 4: Uncertainty-Aware Decision Making (stretch goal)
+- [ ] Task 11 — Expected free energy planner
+- [ ] Task 12 — Full agent + Gameworld integration
+- [ ] Task 13 — Ablation experiments and figures
 
-### Phase 5: Integration and Experiments
-- [ ] Task 9 — Agent + environment + training loop (1-2 games)
-- [ ] Task 10 — Ablation experiments (no BMR, no info gain)
-- [ ] Task 11 — Generate figures
+### Report and Presentation
+- [ ] Task 14 — Draft the report (at whatever phase you've reached)
+- [ ] Task 15 — Create the presentation
 
-### Phase 6: Report and Presentation
-- [ ] Task 12 — Draft the report
-- [ ] Task 13 — Create the presentation
+---
+
+## What a Report Looks Like at Each Stopping Point
+
+| Stop after | Report angle | Key figures |
+|---|---|---|
+| Phase 1 | Bayesian mixture models for object segmentation | Pixel assignments, parameter convergence, prior sensitivity |
+| Phase 2 | + Variational inference for object-centric dynamics | + Free energy curves, trajectory modes, slot tracking |
+| Phase 3 | + Nonparametric Bayes for adaptive model complexity | + Component growth/pruning, BMR impact |
+| Phase 4 | + Full active inference agent with ablations | + Learning curves, ablation comparison, exploration vs. exploitation |
+
+Each row is a complete story. Later phases add depth, but every phase stands alone.
 
 ---
 
 ## Project Framing for CS 677
 
 The report and presentation should be framed around these Bayesian inference themes
- rather than as an RL replication:
+(all covered in CS 677) rather than as an RL replication:
 
-1. **Conjugate priors and posterior updates** — Every model in AXIOM uses exponential-
-   family likelihoods with conjugate priors (Normal-Inverse-Wishart for Gaussians,
-   Dirichlet for Categoricals). The M-step is just a natural parameter update — no
-   gradients. This is the same conjugate Bayesian updating from class, applied to
-   a structured generative model.
+1. **Conjugate priors and posterior updates** — Every model uses exponential-family
+   likelihoods with conjugate priors (NIW for Gaussians, Dirichlet for Categoricals).
+   The M-step is a natural parameter update — no gradients.
 
 2. **Variational inference and the ELBO** — AXIOM minimizes variational free energy
-   (= negative ELBO) via coordinate-ascent mean-field VI. Connect this to the
-   variational inference material from class.
+   via coordinate-ascent mean-field VI.
 
 3. **Mixture models and EM** — All four modules are mixture models. The E-step assigns
-   data to components; the M-step updates component parameters. This is EM with
-   Bayesian priors — a natural extension of the EM intuition from class.
+   data to components; the M-step updates parameters. This is EM with Bayesian priors.
 
-4. **Nonparametric Bayes / model complexity** — The stick-breaking priors allow
-   automatic model expansion (like a Dirichlet process). BMR prunes redundant
-   components. Together they control model complexity in a principled Bayesian way.
+4. **Nonparametric Bayes / model complexity** — Stick-breaking priors allow automatic
+   model expansion. BMR prunes via closed-form Bayes factors.
 
-5. **Decision-making under uncertainty** — The planner uses expected free energy,
-   which balances reward-seeking (utility) with information-seeking (epistemic
-   exploration). The information gain term is a KL divergence on Dirichlet
-   posteriors — quantifying uncertainty about the world model.
+5. **Decision-making under uncertainty** — The planner balances reward-seeking (utility)
+   with information-seeking (epistemic exploration via KL divergence on Dirichlet posteriors).
 
 ---
 
-## Phase 1: Bayesian Mixture Models
+## Phase 1: Bayesian Mixture Models for Object Perception
+
+**Milestone:** At the end of this phase, you can segment game frames into objects
+using conjugate Bayesian mixture models, and have figures showing it works.
 
 ### Task 1 — Slot Mixture Model (sMM)
 
@@ -98,8 +105,7 @@ The report and presentation should be framed around these Bayesian inference the
 **Depends on:** nothing
 
 **What to build:** Implement the `SlotMixtureModel` class. The sMM is a Gaussian
-mixture model that parses an RGB image into object-centric slot latents. This is
-the perception front-end of AXIOM.
+mixture model that parses an RGB image into object-centric slot latents.
 
 **Input:** An (H, W, 3) RGB image, tokenized into (N, 5) pixel tokens [x, y, r, g, b]
 by `envs/utils.py:image_to_tokens`.
@@ -115,9 +121,8 @@ by `envs/utils.py:image_to_tokens`.
 - E-step: compute posterior responsibilities for each pixel under each slot.
 - M-step: update slot position, color, and extent from assigned pixels.
 
-**Bayesian connection:** This is a standard Gaussian mixture model with Bayesian
-priors on mixing weights. The E-step / M-step cycle is conjugate EM — the same
-algorithm taught in class, applied to image segmentation.
+**Bayesian connection:** Standard Gaussian mixture with conjugate priors. The E/M cycle
+is the same conjugate EM from class, applied to image segmentation.
 
 **Implement:** `initialize`, `infer`, `update_params`, `expand_if_needed`.
 
@@ -132,7 +137,7 @@ algorithm taught in class, applied to image segmentation.
 
 **File:** `axiom/models/imm.py`
 **Tests:** `tests/test_imm.py`
-**Depends on:** Task 1 (uses slot color+shape features)
+**Depends on:** Task 1
 
 **What to build:** Implement the `IdentityMixtureModel` class. The iMM assigns a
 discrete identity code (object type) to each slot from its color and shape features,
@@ -145,46 +150,79 @@ using a Gaussian mixture with Normal-Inverse-Wishart (NIW) priors.
   NIW prior: NIW(m_j, kappa_j, U_j, n_j).
 - Likelihood: `p(c^(k), e^(k) | type=j) = N(mu_j, Sigma_j)`.
 - Assignments z_type ~ Cat(pi_type) with stick-breaking prior.
-- E-step: compute type responsibilities via the NIW posterior predictive
-  (a multivariate Student-t distribution).
+- E-step: type responsibilities via NIW posterior predictive (multivariate Student-t).
 - M-step: update NIW sufficient statistics (m, kappa, U, n).
 
-**Bayesian connection:** This is a textbook conjugate Bayesian Gaussian mixture.
-The NIW prior is the conjugate prior for a multivariate Gaussian with unknown
-mean and covariance — a core topic from class. The posterior predictive is a
-Student-t, which naturally accounts for parameter uncertainty.
+**Bayesian connection:** Textbook conjugate Bayesian Gaussian mixture. The NIW prior
+is the conjugate prior for a multivariate Gaussian with unknown mean and covariance.
+The posterior predictive is a Student-t, naturally accounting for parameter uncertainty.
 
 **Implement:** `infer_identity`, `update_params`, `expand_if_needed`.
 
 **Tests to write:**
 - Correct identity assignment with 2-3 distinct color/shape clusters.
-- NIW posterior update: hand-compute for a known prior + one data point, compare.
+- NIW posterior update: hand-compute for known prior + one data point, compare.
 - Type expansion when a novel object type appears.
 
 ---
 
-### Task 3 — Transition Mixture Model (tMM)
+### Task 3 — Phase 1 Experiments and Figures
+
+**Files:** `analysis/notebooks/01_learning_curves.ipynb` (repurpose or create new),
+`analysis/plotting.py`
+**Depends on:** Tasks 1-2
+
+**What to do:** Demonstrate the sMM and iMM on both synthetic and real data.
+
+**Experiments:**
+1. **Synthetic images:** Create 3-4 synthetic images with colored rectangles on a
+   black background. Run sMM for 20 E-M iterations. Show that slots converge to
+   the correct object positions, colors, and extents.
+2. **Real Gameworld frames:** Install gameworld (`make setup-gameworld`), grab a few
+   frames from Bounce or Explode, run sMM on them. Show pixel-to-slot assignments
+   overlaid on the original image.
+3. **Prior sensitivity:** Vary alpha_smm (e.g., 0.1, 1.0, 10.0) and show how it
+   affects the number of slots created. This demonstrates the role of the
+   stick-breaking prior in controlling model complexity.
+4. **Identity clustering:** After sMM segments objects, run iMM on the slot features.
+   Show that objects of the same type get the same identity code.
+
+**Figures to produce:**
+- Original image vs. slot assignments (color-coded by slot) — side by side.
+- Slot parameter convergence over E-M iterations (position error vs. iteration).
+- Number of active slots vs. alpha_smm (prior sensitivity plot).
+- iMM identity clusters in color-shape feature space.
+
+Save to `results/figures/phase1_*`.
+
+---
+
+## Phase 2: Variational Inference for Dynamics Learning
+
+**Milestone:** At the end of this phase, you can track objects over time and learn
+their dynamics using streaming variational inference.
+
+### Task 4 — Transition Mixture Model (tMM)
 
 **File:** `axiom/models/tmm.py`
 **Tests:** `tests/test_tmm.py`
-**Depends on:** Task 1 (uses slot latent states)
+**Depends on:** Task 1
 
 **What to build:** Implement the `TransitionMixtureModel` class. The tMM models
-dynamics as a switching linear dynamical system (SLDS) with L shared linear modes.
+per-slot dynamics as a switching linear dynamical system with L shared modes.
 
-**Input:** Previous slot state x^(k)_{t-1} and a switch variable.
+**Input:** Previous slot state x^(k)_{t-1} and switch variable.
 
 **Math (paper Eq. 5):**
-- Each mode l has parameters (D_l, b_l): `x^(k)_t = D_l x^(k)_{t-1} + b_l + noise`.
-- Fixed covariance 2I for all components.
-- L modes are shared across all K slots.
+- Each mode l has parameters (D_l, b_l): `x_t = D_l x_{t-1} + b_l + noise`.
+- Fixed covariance 2I. L modes shared across all K slots.
 - Switch variable s^(k)_{t,tmm} selects the active mode.
 - Stick-breaking prior on mixing weights.
 - M-step: Bayesian linear regression update for D_l, b_l.
 
-**Bayesian connection:** Each linear mode is a Bayesian linear regression — conjugate
-prior on (D, b) updated with observed (x_prev, x_curr) pairs. The switching mechanism
-is a latent-variable model akin to a hidden Markov model over dynamics modes.
+**Bayesian connection:** Each linear mode is a Bayesian linear regression with a
+conjugate prior on (D, b). The switching mechanism is a latent-variable model akin
+to a hidden Markov model over dynamics modes.
 
 **Implement:** `predict`, `update_params`, `expand_if_needed`.
 
@@ -196,337 +234,349 @@ is a latent-variable model akin to a hidden Markov model over dynamics modes.
 
 ---
 
-## Phase 2: Variational Inference
-
-### Task 4 — Coordinate-Ascent VI Loop
+### Task 5 — Coordinate-Ascent VI Loop
 
 **File:** `axiom/inference/variational.py`
 **Tests:** `tests/test_inference.py`
-**Depends on:** Tasks 1-3
+**Depends on:** Tasks 1-2, Task 4
 
-**What to build:** Implement the `e_step` and `m_step` functions that wire sMM, iMM,
-and tMM into a single-frame variational inference cycle.
+**What to build:** Implement `e_step` and `m_step` that wire sMM, iMM, and tMM
+into a single-frame variational inference cycle.
 
 **Math (paper Eqs. 8-9):**
-- Mean-field factorization: q(Z, Theta) = q(Theta) * prod_t [prod_n q(z^n_smm) * prod_k q(O^(k))].
-- E-step per frame:
-  1. sMM: assign pixels to slots, yielding slot latents.
-  2. iMM: infer identity codes from color/shape features.
-  3. tMM: predict next states given current switch states.
+- Mean-field factorization over slots, time, and parameters.
+- E-step per frame: sMM (assign pixels) → iMM (infer identities) → tMM (predict dynamics).
 - M-step: update all model parameters using sufficient statistics.
 - One E-M pass per frame — streaming coordinate-ascent VI.
 
-**Bayesian connection:** This is coordinate-ascent variational inference (CAVI) with
-a mean-field approximation. The free energy being minimized is the negative ELBO.
-The gradient-free natural parameter updates are possible because every likelihood-prior
-pair is conjugate. This is the same CAVI algorithm from class, applied to a structured
-multi-component generative model.
+**Bayesian connection:** This is CAVI with a mean-field approximation. The free energy
+being minimized is the negative ELBO. Gradient-free natural parameter updates are
+possible because every likelihood-prior pair is conjugate.
 
 **Implement:** `e_step(observation, smm, imm, tmm, rmm)` and
 `m_step(latent_states, observation, smm, imm, tmm, rmm)`. The rmm argument
-can be a no-op until Task 5.
+can be a no-op until Phase 3.
 
 **Tests to write:**
-- End-to-end: synthetic 2-object scene, 10 E-M iterations, verify slot positions converge.
-- Verify M-step updates decrease variational free energy.
+- End-to-end: synthetic 2-object scene, 10 E-M iterations, slot positions converge.
+- M-step updates decrease variational free energy.
 
 ---
 
-### Task 5 — Recurrent Mixture Model (rMM)
+### Task 6 — Phase 2 Experiments and Figures
+
+**Files:** `analysis/notebooks/`, `analysis/plotting.py`
+**Depends on:** Tasks 4-5
+
+**What to do:** Demonstrate streaming VI on sequences — synthetic and real.
+
+**Experiments:**
+1. **Synthetic bouncing ball:** Generate a short sequence (50-100 frames) of a ball
+   following a linear trajectory with one bounce (direction change). Run the full
+   VI loop. Show that the sMM tracks the ball's position and the tMM discovers
+   two linear modes (pre-bounce and post-bounce).
+2. **Real Gameworld rollout:** Run 200 random-action steps on Bounce. Feed the
+   frames through the VI loop. Show slot tracking over time.
+3. **Free energy convergence:** Plot variational free energy per frame over the
+   sequence. Show it decreases as the model improves.
+4. **Learned trajectory modes:** Visualize the tMM linear modes (D, b vectors) —
+   show that they correspond to interpretable motions (e.g., "moving right",
+   "moving down").
+
+**Figures to produce:**
+- Slot positions overlaid on frames at t=0, t=25, t=50 (tracking over time).
+- Variational free energy vs. frame number.
+- tMM mode visualization (direction vectors in 2D position space).
+- Number of active tMM modes over the sequence.
+
+Save to `results/figures/phase2_*`.
+
+---
+
+## Phase 3: Nonparametric Bayes — Growing and Pruning
+
+**Milestone:** At the end of this phase, you can show that the model automatically
+adapts its complexity — growing when new objects/dynamics appear and pruning when
+components are redundant.
+
+### Task 7 — Recurrent Mixture Model (rMM)
 
 **File:** `axiom/models/rmm.py`
 **Tests:** `tests/test_rmm.py`
-**Depends on:** Tasks 1-4
+**Depends on:** Tasks 1-5
 
-**What to build:** Implement the `RecurrentMixtureModel` class. The rMM is the most
-complex module — it models the joint distribution of continuous slot features and
-discrete game state (identity, dynamics mode, action, reward), capturing object-object
-interactions.
+**What to build:** Implement the `RecurrentMixtureModel`. The rMM models the joint
+distribution of continuous slot features and discrete game state, capturing
+object-object interactions.
 
-**Input:** Continuous features f^(k) (slot position, distance to nearest object) and
+**Input:** Continuous features f^(k) (position, distance to nearest object) and
 discrete features d^(k) (identity code, tMM switch, action, reward).
 
 **Math (paper Eqs. 6-7):**
-- Each rMM component m has a factorized likelihood:
-  `p(f, d | s_rmm=m) = N(f; mu_m, Sigma_m) * prod_i Cat(d_i; alpha_{m,i})`
+- Each component m: `p(f, d | s_rmm=m) = N(f; mu_m, Sigma_m) * prod_i Cat(d_i; alpha_{m,i})`
 - Continuous features from projection C of slot state + interaction function g(x^(1:K)).
 - Stick-breaking prior on mixing weights.
-- E-step: infer rMM component, which implies a posterior over tMM switch states.
+- E-step: infer rMM component → posterior over tMM switch states.
 - M-step: update Gaussian (mu, Sigma) and Categorical (alpha) parameters.
 
-**Bayesian connection:** This is a mixture model with mixed continuous-discrete
-likelihoods. Each component's Gaussian has an NIW prior; each Categorical has a
-Dirichlet prior. The joint inference over continuous and discrete latents is the
-same variational EM machinery as the other models, just applied to a richer data type.
+**Bayesian connection:** Mixture model with mixed continuous-discrete likelihoods.
+Gaussian components have NIW priors; Categorical components have Dirichlet priors.
 
 **Implement:** `infer_switch`, `update_params`, `expand_if_needed`.
-
-**Then update** `axiom/inference/variational.py` to integrate the rMM into the
-E-step and M-step.
+Then update `axiom/inference/variational.py` to integrate rMM into the VI loop.
 
 **Tests to write:**
 - Switch inference with known component parameters.
-- Gaussian x Categorical likelihood computation against manual calculation.
+- Gaussian x Categorical likelihood against manual calculation.
 - Component expansion when a new interaction type appears.
 
 ---
 
-## Phase 3: Structure Learning
-
-### Task 6 — Online Model Expansion
+### Task 8 — Online Model Expansion
 
 **File:** `axiom/inference/structure_learning.py`
 **Tests:** `tests/test_inference.py`
-**Depends on:** Tasks 1-5
+**Depends on:** Tasks 1-7
 
-**What to build:** Extend the existing growing heuristic (threshold + assign-or-expand
-are partially implemented) so all four models use it during inference.
+**What to build:** Extend the growing heuristic so all four models use it.
 
 **Math (paper Section 2.1):**
-- For each data point, compute posterior-predictive log-density under each component.
-- Threshold: tau = log p_0(y) + log alpha (prior predictive under empty component + concentration).
-- If best component score < tau and capacity remains, create a new component.
-- This is a deterministic MAP version of the Chinese Restaurant Process assignment rule.
+- Posterior-predictive log-density vs. threshold tau = log p_0(y) + log alpha.
+- If best score < tau and capacity remains, create a new component.
+- Deterministic MAP version of the CRP assignment rule.
 
-**Bayesian connection:** The expansion threshold comes directly from the stick-breaking
-prior (a finite approximation to a Dirichlet process). The decision to grow vs. reuse
-is a Bayesian model comparison: is the marginal likelihood higher under an existing
-component or a new one? This is nonparametric Bayes in action.
+**Bayesian connection:** The expansion threshold comes from the stick-breaking prior
+(finite Dirichlet process approximation). Growing vs. reusing is Bayesian model
+comparison: marginal likelihood under existing component vs. new one.
 
 **Implement:**
 - `posterior_predictive_log_density` helper for each model.
-- Wire each model's `expand_if_needed` to use the shared `assign_or_expand` logic.
+- Wire each model's `expand_if_needed` to the shared `assign_or_expand` logic.
 
 **Tests to write:**
 - Expansion fires at the right threshold for each model.
-- Capacity limits are respected.
-- End-to-end: new object appears at frame 50, slot count increases.
+- Capacity limits respected.
+- New object at frame 50 → slot count increases.
 
 ---
 
-### Task 7 — Bayesian Model Reduction (BMR)
+### Task 9 — Bayesian Model Reduction (BMR)
 
 **File:** `axiom/inference/bmr.py`
 **Tests:** `tests/test_inference.py`
-**Depends on:** Task 5
+**Depends on:** Task 7
 
-**What to build:** Implement BMR for the rMM. Every 500 frames, evaluate whether
-merging pairs of rMM components decreases expected free energy, and greedily merge
-the best candidates.
+**What to build:** Implement BMR for the rMM. Every 500 frames, evaluate merges.
 
 **Math (paper Section 2.1):**
-- Sample up to 2000 active rMM component pairs.
-- For each pair, score the merge: does the reduced model decrease expected free energy
-  of the multinomial distributions over reward and tMM switch?
-- Accept merge if free energy decreases; roll back otherwise.
-- This enables generalization — e.g., learning that negative reward occurs when the
-  ball hits the bottom, by merging multiple single-event clusters.
+- Sample up to 2000 rMM component pairs.
+- Score merge: does the reduced model decrease expected free energy of the
+  multinomial over reward and tMM switch?
+- Accept if free energy decreases; roll back otherwise.
 
-**Bayesian connection:** BMR is a closed-form Bayesian model comparison between a
-full model and a reduced (merged) model. It computes the Bayes factor for the merge
-analytically using the Dirichlet-Categorical conjugacy. This is one of the most
-distinctly Bayesian pieces of AXIOM — it's principled model selection without
-cross-validation or heuristic pruning.
+**Bayesian connection:** BMR is closed-form Bayesian model comparison — computing the
+Bayes factor for merging two components using Dirichlet-Categorical conjugacy. This
+is principled model selection without cross-validation.
 
 **Implement:** `select_merge_candidates`, `score_merge`, `perform_bmr`.
 
 **Tests to write:**
-- Merging two identical components always decreases free energy.
-- Merging two very different components does not pass the threshold.
-- Active component count decreases after BMR with redundant components.
+- Merging identical components always decreases free energy.
+- Merging very different components does not pass threshold.
+- Active component count decreases with redundant components.
 
 ---
 
-## Phase 4: Uncertainty-Aware Planning
+### Task 10 — Phase 3 Experiments and Figures
 
-### Task 8 — Expected Free Energy Planner
+**Files:** `analysis/notebooks/`, `analysis/plotting.py`
+**Depends on:** Tasks 7-9
+
+**What to do:** Demonstrate automatic model complexity adaptation.
+
+**Experiments:**
+1. **Object appearance/disappearance:** Run a sequence where a new object appears
+   at frame 100. Show slot count growing. Then remove an object and show the
+   model adapts (unused slot counter from Appendix A.5).
+2. **BMR pruning dynamics:** Run the full model on a 2000+ frame Gameworld rollout
+   (random actions). Plot rMM component count over frames. Show the sharp decline
+   when BMR fires at every 500-frame interval.
+3. **With vs. without BMR:** Run the same sequence with BMR enabled and disabled.
+   Compare: component count over time, and (if possible) prediction quality or
+   free energy. This is the first ablation.
+4. **Generalization via merging:** Show that after BMR, the model has merged
+   single-event clusters into general rules (e.g., "ball near bottom → negative
+   reward" regardless of exact x-position).
+
+**Figures to produce:**
+- Active rMM component count vs. frame (with and without BMR).
+- Active slot count over a sequence with appearing/disappearing objects.
+- rMM clusters in 2D space, colored by predicted reward (before and after BMR).
+- Free energy comparison with/without BMR.
+
+Save to `results/figures/phase3_*`.
+
+---
+
+## Phase 4: Uncertainty-Aware Decision Making (Stretch Goal)
+
+**Milestone:** Full AXIOM agent playing Gameworld games, with ablation experiments
+showing which Bayesian components matter most.
+
+### Task 11 — Expected Free Energy Planner
 
 **File:** `axiom/planning/active_inference.py`
 **Tests:** add `tests/test_planning.py`
-**Depends on:** Tasks 1-5
+**Depends on:** Tasks 1-9
 
-**What to build:** Implement the `Planner` class. It selects actions by rolling out
-imagined trajectories through the world model and scoring them with expected free energy.
+**What to build:** Implement the `Planner` class.
 
 **Math (paper Eq. 10):**
 - pi* = argmin_pi sum_tau [ -E[log p(r|O,pi)] - D_KL(q(alpha_rmm|O,pi) || q(alpha_rmm)) ]
-- First term: expected utility (reward seeking).
-- Second term: information gain — how much the rMM Dirichlet posteriors would change.
-- Lower expected free energy = better policy.
+- First term: expected utility. Second term: information gain.
 
-**Bayesian connection:** This is the heart of active inference. The agent doesn't just
-maximize reward — it also seeks information to reduce uncertainty about its own model.
-The information gain is a KL divergence between Dirichlet posteriors, which quantifies
-epistemic uncertainty. This is decision-making under uncertainty with a Bayesian
-exploration bonus, not an ad-hoc epsilon-greedy strategy.
+**Bayesian connection:** The agent seeks information to reduce uncertainty about its
+world model. Information gain is a KL divergence on Dirichlet posteriors — quantifying
+epistemic uncertainty. This is decision-making under uncertainty with a principled
+Bayesian exploration bonus.
 
 **Implement:** `select_action`, `compute_expected_utility`, `compute_information_gain`.
 
 **Tests to write:**
-- Mock world model: always +1 reward for action 0 → planner selects action 0.
+- Mock world: +1 reward for action 0 → planner selects action 0.
 - Information gain is non-negative.
-- With info_gain_weight=0, planner is purely reward-seeking.
-- With utility_weight=0, planner is purely information-seeking.
+- info_gain_weight=0 → purely reward-seeking.
+- utility_weight=0 → purely information-seeking.
 
 ---
 
-## Phase 5: Integration and Experiments
-
-### Task 9 — Agent + Environment + Training Loop
+### Task 12 — Full Agent + Gameworld Integration
 
 **Files:** `axiom/agent.py`, `experiments/run_experiment.py`, `envs/gameworld.py`
 **Tests:** `tests/test_agent.py`
-**Depends on:** Tasks 1-8
+**Depends on:** Tasks 1-11
 
 **What to build:** Complete the agent, environment wrapper, and training loop.
-Run on **1-2 games** (suggest Bounce and Explode — they show different dynamics
-and are among the clearest in the paper's results).
+Target 1-2 games (Bounce and Explode recommended).
 
 **Agent `observe` method:**
-1. Tokenize image via `envs/utils.py:image_to_tokens`.
+1. Tokenize image.
 2. E-step: sMM → iMM → rMM → tMM.
 3. M-step: update all parameters.
-4. Structure learning: expand models if needed.
+4. Structure learning: expand if needed.
 5. BMR every 500 steps.
 
-**Training loop:** Load config, init env + agent, loop for 10k steps, save rewards.
+**Training loop:** Load config, init env + agent, loop 10k steps, save rewards.
 
-**Environment wrapper:** Complete `envs/gameworld.py` reset/step interface.
-Requires `make setup-gameworld`.
-
-**Tests:** Smoke test with mock environment, 100 steps, no crash.
+**Tests:** Smoke test — mock environment, 100 steps, no crash.
 
 ---
 
-### Task 10 — Ablation Experiments
+### Task 13 — Ablation Experiments and Figures
 
-**Files:** `experiments/run_ablation.py`
-**Depends on:** Task 9
+**Files:** `experiments/run_ablation.py`, `analysis/plotting.py`
+**Depends on:** Task 12
 
 **What to do:** Run three variants on 1-2 games, 5+ seeds each:
+1. **Full AXIOM** — all components active.
+2. **No BMR** — `bmr_interval=0`.
+3. **No information gain** — `info_gain_weight=0`.
 
-1. **Full AXIOM** — all components active (baseline).
-2. **No BMR** — disable Bayesian Model Reduction (set `bmr_interval=0`).
-3. **No information gain** — disable epistemic exploration (set `info_gain_weight=0`).
+**Figures to produce:**
+- Learning curves: moving-average reward for full vs. no-BMR vs. no-info-gain.
+- Exploration-exploitation tradeoff: info gain and utility per step over training.
+- Cumulative reward summary (mean ± std across seeds).
 
-These ablations directly answer: "Which Bayesian components matter most for sample
-efficiency?" This is the central question of the project.
-
-Save reward arrays to `results/`.
-
----
-
-### Task 11 — Generate Figures
-
-**Files:** `analysis/plotting.py`, `analysis/metrics.py`
-**Depends on:** Task 10
-
-**What to generate:**
-
-1. **Learning curves** (paper Figure 3 style): moving-average reward for full AXIOM
-   vs. no-BMR vs. no-info-gain on the 1-2 chosen games. This is the main result.
-
-2. **BMR pruning plot** (paper Figure 4b style): rMM component count over training,
-   showing how BMR compresses the model.
-
-3. **Exploration-exploitation plot** (paper Figure 4c style): info gain vs. utility
-   over training, showing the shift from exploration to exploitation.
-
-4. **Optional:** rMM cluster visualization (paper Figure 4a style) for interpretability.
-
-Save to `results/figures/` and copy to `docs/report/figures/`.
+Save to `results/figures/phase4_*`.
 
 ---
 
-## Phase 6: Report and Presentation
+## Report and Presentation
 
-### Task 12 — Draft the Report
+### Task 14 — Draft the Report
 
 **File:** `docs/report/report.tex`
-**Depends on:** Task 11
+**Depends on:** whichever phase you've completed
 
 The report is 4-5 pages, 12pt, 1in margins, single-spaced. The audience is a CS 677
-student who knows conjugate priors, posterior updates, variational inference, and
-mixture models from class, but nothing about active inference or RL.
+student. Write about what you have — the report scope scales with the phases completed.
 
-**Section guide (draft one section at a time):**
+**Section guide:**
 
-**12a — Introduction (~0.5 page):**
-- Humans learn games fast using prior knowledge about objects; RL agents don't.
-- AXIOM is a Bayesian agent that uses mixture models with conjugate priors to build
-  an object-centric world model — no gradient-based optimization.
-- This project replicates the Bayesian core of AXIOM on a simplified setting and
-  evaluates which components drive sample efficiency.
+**14a — Introduction (~0.5 page):**
+- Humans learn fast using object priors; RL agents don't.
+- AXIOM uses Bayesian mixture models with conjugate priors — no gradients.
+- This project replicates the Bayesian core and evaluates which components matter.
 
-**12b — Background (~1 page):**
-- Gaussian mixture models with conjugate priors (NIW, Dirichlet) — connect to class.
-- Variational inference: ELBO / free energy, coordinate-ascent VI, mean-field.
-- Nonparametric Bayes: stick-breaking priors for automatic model complexity.
-- Active inference: planning as free energy minimization, exploration via info gain.
-- Keep this accessible — define terms, avoid assuming RL background.
+**14b — Background (~1 page):**
+- Gaussian mixtures with conjugate priors (NIW, Dirichlet).
+- Variational inference: ELBO / free energy, CAVI, mean-field.
+- Nonparametric Bayes: stick-breaking priors, automatic model complexity.
+- (If Phase 4 reached) Active inference: planning as free energy minimization.
+- Keep accessible — no RL background assumed.
 
-**12c — Methods (~1.5 pages):**
-- AXIOM architecture at a high level: four mixture models and their roles.
-- Walk through one model in detail (e.g., sMM) to show the Bayesian mechanics:
-  likelihood, prior, E-step, M-step, expansion.
-- Structure learning: growing heuristic + BMR as Bayesian model comparison.
-- Planning: expected free energy = utility + information gain.
-- Note the scope reduction: 1-2 games, focus on Bayesian components.
+**14c — Methods (~1.5 pages):**
+- AXIOM architecture: whichever models you implemented.
+- Walk through one model in detail (sMM) to show the Bayesian mechanics.
+- Structure learning if Phase 3 reached; planning if Phase 4 reached.
 
-**12d — Results (~1 page):**
-- Learning curves: full AXIOM vs. ablations on 1-2 games.
-- What the ablations reveal: does BMR help? Does info gain help?
-- BMR pruning and exploration-exploitation dynamics.
-- Use figures, not tables of numbers.
+**14d — Results (~1 page):**
+- Figures from whichever phases you completed.
+- If Phase 1 only: mixture model segmentation + prior sensitivity.
+- If Phase 2: + dynamics learning + free energy convergence.
+- If Phase 3: + BMR ablation + model complexity adaptation.
+- If Phase 4: + game-playing learning curves + full ablations.
 
-**12e — Discussion + Conclusion (~0.5 page):**
-- Which Bayesian components matter most and why.
-- Connection to CS 677: conjugate priors make online learning tractable, variational
-  inference scales to structured models, uncertainty quantification drives exploration.
-- Limitations: simplified setting, fewer games than paper, no deep RL baselines.
-- What extending to the full benchmark would require (point to `roadmap_extended.md`).
+**14e — Discussion + Conclusion (~0.5 page):**
+- What worked, what the results show about the Bayesian components.
+- Connection to CS 677 concepts.
+- What further phases would add (point to `roadmap_replication.md` for full scope).
 
 **Compile:** `cd docs/report && make report`
 
 ---
 
-### Task 13 — Create the Presentation
+### Task 15 — Create the Presentation
 
 **Files:** `docs/presentation/slides.md`, `docs/presentation/script.md`
-**Depends on:** Task 12
+**Depends on:** Task 14
 
-**What to do:**
-1. ~8-10 slides: motivation, Bayesian inference connections (the 5 themes from the
-   "Project Framing" section above), AXIOM architecture, ablation results, takeaways.
-2. Refine script to ~8 minutes. Spend the most time on the Bayesian connections
-   and results interpretation — these are the highest-weighted grading dimensions.
-3. Emphasize visual results (learning curves, BMR pruning, exploration-exploitation).
-4. Record and post to Discord #final-project channel.
+1. ~8-10 slides: motivation, Bayesian connections (the 5 themes above), architecture,
+   results from completed phases, takeaways.
+2. ~8 minutes. Focus on Bayesian connections and results interpretation.
+3. Record and post to Discord #final-project channel.
 
 ---
 
 ## Quick Reference: Task Dependencies
 
 ```
-Task 1  (sMM) ─────┐
-Task 2  (iMM) ──────┼──> Task 4 (VI loop) ──> Task 5 (rMM) ──┐
-Task 3  (tMM) ──────┘                                         │
-                    Task 6 (structure learning) <──────────────┤
-                    Task 7 (BMR) <─────────────────────────────┤
-                    Task 8 (planning) <────────────────────────┘
-                              │
-                              v
-                    Task 9 (agent + training, 1-2 games)
-                              │
-                              v
-                    Task 10 (ablation experiments)
-                              │
-                              v
-                    Task 11 (figures)
-                              │
-                              v
-                    Task 12 (report) ──> Task 13 (presentation)
+Task 1  (sMM) ──┐
+Task 2  (iMM) ──┼──> Task 3 (Phase 1 figures)
+                │
+Task 4  (tMM) ──┤
+                └──> Task 5 (VI loop) ──> Task 6 (Phase 2 figures)
+                                    │
+                                    v
+                              Task 7 (rMM) ──> Task 8 (expansion)
+                                          └──> Task 9 (BMR)
+                                                │
+                                                v
+                                          Task 10 (Phase 3 figures)
+                                                │
+                                                v
+                                          Task 11 (planner)
+                                                │
+                                                v
+                                          Task 12 (full agent)
+                                                │
+                                                v
+                                          Task 13 (Phase 4 figures)
+                                                │
+                                                v
+                                    Task 14 (report) ──> Task 15 (presentation)
 ```
 
-Tasks 1, 2, and 3 can be done in parallel.
-Tasks 6, 7, and 8 can be done in parallel after Task 5.
+Tasks 1, 2, and 4 can be done in parallel.
+Tasks 8 and 9 can be done in parallel after Task 7.
+Task 14 can be started after any phase's figures are complete.
