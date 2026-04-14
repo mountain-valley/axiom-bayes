@@ -47,6 +47,12 @@ on the Gameworld 10k benchmark (10 pixel-based games, 10k interaction steps).
 - Type hints on public function signatures.
 - Tests use pytest and should verify closed-form Bayesian updates where possible.
 
+## Roadmap
+
+- The full task breakdown is in `docs/roadmap.md` (15 tasks across 6 phases).
+- To start a task, read the roadmap entry for the task number and follow its instructions.
+- Check `docs/replication_log.md` first to see what has already been completed.
+
 ## Replication Log
 
 - After meaningful progress (implementing a module, running an experiment, finding a bug),
