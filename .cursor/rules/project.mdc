@@ -1,0 +1,78 @@
+---
+description: Project conventions and structure for the AXIOM replication
+globs:
+alwaysApply: true
+---
+
+# AXIOM Replication — Project Rules
+
+## Project Overview
+
+This repo replicates and extends the AXIOM paper (Heins et al., 2025): an active inference agent
+that learns object-centric world models using four expanding Bayesian mixture models, evaluated
+on the Gameworld 10k benchmark (10 pixel-based games, 10k interaction steps).
+
+## Repository Layout
+
+- `axiom/` — Core library: models (sMM, iMM, tMM, rMM), inference, planning, agent
+- `envs/` — Gameworld environment wrappers and preprocessing
+- `baselines/` — Thin wrappers around BBF, DreamerV3, random agent
+- `experiments/` — Training scripts, YAML configs (per game), sweep orchestration
+- `analysis/` — Plotting utilities, metrics, Jupyter notebooks for figures
+- `results/` — Output data and generated figures (raw data gitignored)
+- `tests/` — Unit tests, one per module
+- `docs/` — Paper notes, replication log, extension ideas, report, presentation
+  - `docs/report/` — LaTeX source for the 4–5 page class report (12pt, 1in margins, single-spaced)
+  - `docs/presentation/` — Slides and script for the 8-minute Discord presentation
+  - `docs/proposal.md` — Submitted project proposal (for reference)
+
+## Virtual Environment
+
+- The venv lives at `.venv/` in the project root.
+- Always use `.venv/bin/python` or activate with `source .venv/bin/activate`.
+- Install new dependencies by adding them to `pyproject.toml` then running `make setup`.
+
+## Running Things
+
+- Use `make` targets as the primary interface: `make train`, `make test`, `make sweep`, etc.
+- Single game training: `make train GAME=bounce STEPS=10000`
+- Full sweep: `make sweep SEEDS=10`
+- The CLI entry point is `axiom` (e.g., `axiom train --game bounce`).
+
+## Coding Conventions
+
+- Python 3.10+, formatted with ruff (line length 100).
+- NumPy/SciPy for core computation (AXIOM is gradient-free).
+- YAML configs in `experiments/configs/` — one per game, inheriting from `default.yaml`.
+- Type hints on public function signatures.
+- Tests use pytest and should verify closed-form Bayesian updates where possible.
+
+## Replication Log
+
+- After meaningful progress (implementing a module, running an experiment, finding a bug),
+  append an entry to `docs/replication_log.md` with the date, what was done, and any findings.
+- This file serves as shared memory across sessions for both human and LLM agents.
+
+## Key Paper Details
+
+- Four mixture models: sMM (slots/objects from pixels), iMM (object identity types),
+  tMM (piecewise linear dynamics), rMM (object interactions + reward/action coupling).
+- All use truncated stick-breaking priors for automatic model expansion.
+- Inference: coordinate-ascent variational inference, one frame at a time (streaming).
+- Structure learning: online growing heuristic + Bayesian Model Reduction (BMR) every 500 frames.
+- Planning: active inference with expected free energy (utility + information gain).
+- Benchmark: Gameworld 10k — 10 games, 10k steps, 10 seeds. Baselines: BBF, DreamerV3.
+
+## Class Project (CS 677)
+
+This repo also fulfills a CS 677 Bayesian Statistics final project (100 points total):
+- Proposal (10 pts) — submitted, see `docs/proposal.md`
+- Presentation (40 pts) — 8-min async video on Discord, slides in `docs/presentation/`
+- Peer Review (10 pts) — review classmates' presentations
+- Report (40 pts) — 4–5 pages, 12pt, 1in margins, single-spaced, in `docs/report/`
+
+The report audience is a fellow CS 677 student. Key grading dimensions:
+background material, connection to Bayesian inference, discussion/interpretation
+of results, writing clarity, and the presentation itself.
+
+Compile the report with `make report` from `docs/report/`.

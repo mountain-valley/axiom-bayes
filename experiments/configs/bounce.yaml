@@ -1,0 +1,4 @@
+# Bounce-specific overrides
+# Inherits from default.yaml
+
+game: bounce

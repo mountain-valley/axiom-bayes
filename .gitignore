@@ -1,0 +1,33 @@
+# Virtual environment
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+
+# Results data (track figures but not raw data)
+results/**/*.pkl
+results/**/*.npy
+results/**/*.csv
+!results/.gitkeep
+!results/figures/.gitkeep
+
+# Vendor (cloned repos)
+vendor/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Misc
+*.log

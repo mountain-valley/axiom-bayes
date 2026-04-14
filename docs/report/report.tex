@@ -1,0 +1,88 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\singlespacing
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage[font=small]{caption}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[numbers]{natbib}
+
+\graphicspath{{figures/}}
+
+\title{Replicating AXIOM: Active Inference with\\Expanding Object-Centric Models}
+\author{Tanner \\ CS 677 — Bayesian Statistics}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================================
+\section{Introduction}
+% Describe the problem, motivation, and why it connects to Bayesian inference.
+% Assume the reader has CS 677 background but nothing beyond that.
+
+% TODO: Write introduction
+
+
+% ============================================================================
+\section{Background}
+% Cover the key Bayesian concepts used in AXIOM:
+% - Conjugate priors (Normal-Inverse-Wishart, Dirichlet)
+% - Variational inference and the evidence lower bound (ELBO)
+% - Mixture models and the Dirichlet process / stick-breaking construction
+% - Active inference and expected free energy
+% Cite the AXIOM paper and relevant CS 677 material.
+
+% TODO: Write background
+
+
+% ============================================================================
+\section{Methods}
+% High-level explanation of AXIOM's architecture:
+% - Four mixture models (sMM, iMM, tMM, rMM) and what each does
+% - Online structure learning (growing and pruning)
+% - Bayesian Model Reduction
+% - Planning via expected free energy
+% Then explain your replication: what you implemented, any deviations.
+
+% TODO: Write methods
+
+
+% ============================================================================
+\section{Results}
+% Present results with figures and tables:
+% - Learning curves (replicating Figure 3)
+% - Cumulative reward table (replicating Table 1)
+% - Ablation comparisons
+% - Interpretability visualizations if space permits
+% Use figures over raw tables where possible.
+
+% TODO: Write results
+
+
+% ============================================================================
+\section{Discussion}
+% Interpret the results:
+% - How well does AXIOM replicate? Where does it match/differ?
+% - What do the ablations reveal about the importance of each component?
+% - Connection back to Bayesian inference: what makes this approach work?
+% - Limitations and future directions.
+
+% TODO: Write discussion
+
+
+% ============================================================================
+\section{Conclusion}
+
+% TODO: Write conclusion
+
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

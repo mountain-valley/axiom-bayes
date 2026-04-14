@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "axiom"
+version = "0.1.0"
+description = "Replication and extension of AXIOM: Active eXpanding Inference with Object-centric Models"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "seaborn",
+    "pyyaml",
+    "tqdm",
+    "pandas",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ipython",
+    "jupyterlab",
+    "ruff",
+]
+baselines = [
+    "torch",
+    "gymnasium",
+]
+
+[project.scripts]
+axiom = "axiom.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["axiom*", "envs*", "baselines*", "analysis*"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
