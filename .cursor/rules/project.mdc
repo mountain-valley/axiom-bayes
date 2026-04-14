@@ -8,9 +8,11 @@ alwaysApply: true
 
 ## Project Overview
 
-This repo replicates and extends the AXIOM paper (Heins et al., 2025): an active inference agent
-that learns object-centric world models using four expanding Bayesian mixture models, evaluated
-on the Gameworld 10k benchmark (10 pixel-based games, 10k interaction steps).
+This project studies whether the Bayesian components of AXIOM (Heins et al., 2025) — variational
+updating, mixture-based latent dynamics, and uncertainty-aware action selection — can be replicated
+in a simplified game setting, and evaluates which components most affect sample efficiency. The
+scope is a Bayesian core slice of AXIOM tested on 1-2 Gameworld environments, not the full
+10-game benchmark. The focus is on understanding and demonstrating the Bayesian machinery at an academic but accessible level. A full-benchmark roadmap is in `docs/roadmap_extended.md`.
 
 ## Repository Layout
 
@@ -49,9 +51,10 @@ on the Gameworld 10k benchmark (10 pixel-based games, 10k interaction steps).
 
 ## Roadmap
 
-- The full task breakdown is in `docs/roadmap.md` (15 tasks across 6 phases).
+- The task breakdown is in `docs/roadmap.md` (13 tasks across 6 phases, scoped to the Bayesian core).
 - To start a task, read the roadmap entry for the task number and follow its instructions.
 - Check `docs/replication_log.md` first to see what has already been completed.
+- The full 10-game replication roadmap is preserved in `docs/roadmap_extended.md`.
 
 ## Replication Log
 
