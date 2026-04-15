@@ -1,0 +1,17 @@
+# Phase 1: sMM Prior Sensitivity Sweeps
+# See docs/roadmap.md Task 2 for details.
+
+experiment_name: prior_sensitivity/smm
+
+sweeps:
+  - param: dof_offset
+    values: [2.0, 5.0, 10.0, 20.0, 50.0]
+
+  - param: smm_eloglike_threshold
+    values: [3.0, 4.0, 5.0, 5.7, 7.0, 10.0]
+
+  # For scale, multiply the default vector [0.075, 0.075, 0.75, 0.75, 0.75]
+  # by each factor. The sweep runner should handle this as a special case,
+  # passing the scaled vector as --scale.
+  - param: scale_factor
+    values: [0.25, 0.5, 1.0, 2.0, 4.0]

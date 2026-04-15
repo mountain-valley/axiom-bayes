@@ -1,0 +1,20 @@
+# Phase 1: rMM Prior Sensitivity Sweeps
+# See docs/roadmap.md Task 4 for details.
+
+experiment_name: prior_sensitivity/rmm
+
+sweeps:
+  # Uniform scale: multiply all default discrete_alphas by this factor.
+  # Default alphas: [1e-4, 1e-4, 1e-4, 1e-4, 1.0, 1e-4]
+  - param: discrete_alpha_scale
+    values: [0.01, 0.1, 1.0, 10.0, 100.0]
+
+  # Reward-specific alpha (5th element) sweep, others held at 1e-4.
+  - param: reward_alpha
+    values: [0.0001, 0.01, 0.1, 1.0, 10.0]
+
+  - param: cont_scale_switch
+    values: [10.0, 25.0, 75.0, 150.0, 300.0]
+
+  - param: r_interacting
+    values: [0.025, 0.05, 0.075, 0.15, 0.3]

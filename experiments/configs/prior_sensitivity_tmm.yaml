@@ -1,0 +1,16 @@
+# Phase 1: tMM Hyperparameter Sensitivity Sweeps
+# Note: tMM uses flat priors with fixed covariance (2I), not conjugate priors.
+# These are structural and likelihood hyperparameters.
+# See docs/roadmap.md Task 3 for details.
+
+experiment_name: prior_sensitivity/tmm
+
+sweeps:
+  - param: sigma_sqr
+    values: [0.5, 1.0, 2.0, 4.0, 8.0]
+
+  - param: logp_threshold
+    values: [-0.1, -0.01, -0.001, -0.00001, -0.000001]
+
+  - param: n_total_components
+    values: [50, 100, 200, 500]

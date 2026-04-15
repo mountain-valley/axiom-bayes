@@ -1,0 +1,14 @@
+# Phase 3: Info-Gain Coefficient Sweep
+# See docs/roadmap.md Task 10 for details.
+
+experiment_name: info_gain_sweep
+
+sweeps:
+  # Replication: 0.0 vs 0.1 reproduces Table 1 "no IG" ablation.
+  # Novel: additional values map the full sensitivity curve.
+  - param: info_gain
+    values: [0.0, 0.01, 0.05, 0.1, 0.5, 1.0]
+
+  # Optional (if time permits): planning horizon sweep at default info_gain
+  - param: planning_horizon
+    values: [8, 16, 24, 32]
