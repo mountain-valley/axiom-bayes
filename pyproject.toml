@@ -3,19 +3,20 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "axiom"
+name = "axiom-analysis"
 version = "0.1.0"
-description = "Replication and extension of AXIOM: Active eXpanding Inference with Object-centric Models"
+description = "Bayesian analysis of the AXIOM active inference agent (CS 677 project)"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.12"
 dependencies = [
     "numpy",
     "scipy",
     "matplotlib",
     "seaborn",
+    "pandas",
     "pyyaml",
     "tqdm",
-    "pandas",
+    "jax",
 ]
 
 [project.optional-dependencies]
@@ -26,16 +27,12 @@ dev = [
     "jupyterlab",
     "ruff",
 ]
-baselines = [
-    "torch",
-    "gymnasium",
+gpu = [
+    "jax[cuda12]",
 ]
 
-[project.scripts]
-axiom = "axiom.cli:main"
-
 [tool.setuptools.packages.find]
-include = ["axiom*", "envs*", "baselines*", "analysis*"]
+include = ["experiments*", "analysis*"]
 
 [tool.ruff]
 line-length = 100

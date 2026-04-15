@@ -1,80 +1,90 @@
 ---
-description: Project conventions and structure for the AXIOM replication
+description: Project conventions and structure for the AXIOM Bayesian analysis
 globs:
 alwaysApply: true
 ---
 
-# AXIOM Replication — Project Rules
+# AXIOM Bayesian Analysis — Project Rules
 
 ## Project Overview
 
-This project studies whether the Bayesian components of AXIOM (Heins et al., 2025) — variational
-updating, mixture-based latent dynamics, and uncertainty-aware action selection — can be replicated
-in a simplified game setting, and evaluates which components most affect sample efficiency. The
-scope is a Bayesian core slice of AXIOM tested on 1-2 Gameworld environments, not the full
-10-game benchmark. The focus is on understanding and demonstrating the Bayesian machinery at an academic but accessible level. A full-benchmark roadmap is in `docs/roadmap_replication.md`.
+This project performs a Bayesian analysis of AXIOM (Heins et al., 2025) — an active inference
+agent that uses Bayesian mixture models, variational inference, Bayesian model reduction,
+and uncertainty-aware planning to master pixel-based games without gradients. Rather than
+reimplementing AXIOM (the source is at `github.com/VersesTech/axiom`), we install the official
+JAX-based codebase and conduct three focused analyses for a CS 677 Bayesian Statistics final project:
+
+1. **Prior and hyperparameter sensitivity** — How do prior specifications and model hyperparameters affect performance?
+2. **BMR deep dive** — How does Bayesian model selection via expected free energy compare to naive pruning?
+3. **Exploration vs. exploitation** — How does the information-gain term affect learning?
 
 ## Repository Layout
 
-- `axiom/` — Core library: models (sMM, iMM, tMM, rMM), inference, planning, agent
-- `envs/` — Gameworld environment wrappers and preprocessing
-- `baselines/` — Thin wrappers around BBF, DreamerV3, random agent
-- `experiments/` — Training scripts, YAML configs (per game), sweep orchestration
-- `analysis/` — Plotting utilities, metrics, Jupyter notebooks for figures
-- `results/` — Output data and generated figures (raw data gitignored)
-- `tests/` — Unit tests, one per module
-- `docs/` — Paper notes, replication log, extension ideas, report, presentation
-  - `docs/report/` — LaTeX source for the 4–5 page class report (12pt, 1in margins, single-spaced)
-  - `docs/presentation/` — Slides and script for the 8-minute Discord presentation
-  - `docs/proposal.md` — Submitted project proposal (for reference)
+- `vendor/axiom/` — Official AXIOM source (cloned from GitHub, installed editable)
+- `vendor/gameworld/` — Official Gameworld environment suite
+- `experiments/` — Sweep runner, config YAMLs defining parameter grids per phase
+- `analysis/` — Plotting utilities, helpers, Jupyter notebooks for each phase
+- `results/` — Output CSVs, BMR logs, and generated figures (raw data gitignored)
+- `tests/` — Setup verification, infrastructure tests, analysis helper tests
+- `docs/` — Roadmap, paper notes, replication log, report, presentation
+  - `docs/report/` — LaTeX source for the 4–5 page class report
+  - `docs/presentation/` — Slides and script for the 8-minute presentation
+  - `docs/roadmap.md` — Active roadmap (analysis-focused, 15 tasks)
+  - `docs/roadmap_implementation.md` — Archived implementation-focused roadmap
+  - `docs/roadmap_replication.md` — Full 10-game replication roadmap (reference)
 
 ## Virtual Environment
 
 - The venv lives at `.venv/` in the project root.
 - Always use `.venv/bin/python` or activate with `source .venv/bin/activate`.
-- Install new dependencies by adding them to `pyproject.toml` then running `make setup`.
+- AXIOM and Gameworld are installed from `vendor/` in editable mode.
+- Install new analysis dependencies by adding them to `pyproject.toml` then `pip install -e ".[dev]"`.
 
 ## Running Things
 
-- Use `make` targets as the primary interface: `make train`, `make test`, `make sweep`, etc.
-- Single game training: `make train GAME=bounce STEPS=10000`
-- Full sweep: `make sweep SEEDS=10`
-- The CLI entry point is `axiom` (e.g., `axiom train --game bounce`).
+- AXIOM experiments are run from `vendor/axiom/` using `python main.py --game=X --param=Y`.
+- Sweep scripts in `experiments/` automate multi-configuration runs.
+- Use `make` targets: `make baseline`, `make sweep-phase1`, `make figures`, etc.
+- Set `WANDB_MODE=disabled` to suppress wandb prompts during runs.
 
 ## Coding Conventions
 
 - Python 3.10+, formatted with ruff (line length 100).
-- NumPy/SciPy for core computation (AXIOM is gradient-free).
-- YAML configs in `experiments/configs/` — one per game, inheriting from `default.yaml`.
+- Analysis code uses numpy, scipy, pandas, matplotlib, seaborn.
+- AXIOM itself uses JAX, equinox, jaxtyping (do not modify AXIOM source except for BMR logging).
 - Type hints on public function signatures.
-- Tests use pytest and should verify closed-form Bayesian updates where possible.
+- Tests use pytest.
 
 ## Roadmap
 
-- The task breakdown is in `docs/roadmap.md` (13 tasks across 6 phases, scoped to the Bayesian core).
+- The task breakdown is in `docs/roadmap.md` (15 tasks across 5 phases).
 - To start a task, read the roadmap entry for the task number and follow its instructions.
 - Check `docs/replication_log.md` first to see what has already been completed.
-- The full 10-game replication roadmap is preserved in `docs/roadmap_replication.md`.
+- Phases 1-3 are independent analysis themes; they can be done in any order.
 
 ## Replication Log
 
-- After meaningful progress (implementing a module, running an experiment, finding a bug),
-  append an entry to `docs/replication_log.md` with the date, what was done, and any findings.
-- This file serves as shared memory across sessions for both human and LLM agents.
+- After meaningful progress (running experiments, producing figures, instrumenting code),
+  append an entry to `docs/replication_log.md` with the date, what was done, and findings.
+- This file is shared memory across sessions for both human and LLM agents.
 
 ## Key Paper Details
 
-- Four mixture models: sMM (slots/objects from pixels), iMM (object identity types),
-  tMM (piecewise linear dynamics), rMM (object interactions + reward/action coupling).
+- Four mixture models: sMM (slots from pixels), iMM (object identity), tMM (dynamics modes),
+  rMM (object interactions + reward/action).
+- Most use conjugate priors (NIW, Dirichlet, Gamma); the tMM uses flat priors with fixed covariance.
 - All use truncated stick-breaking priors for automatic model expansion.
-- Inference: coordinate-ascent variational inference, one frame at a time (streaming).
-- Structure learning: online growing heuristic + Bayesian Model Reduction (BMR) every 500 frames.
+- Inference: coordinate-ascent VI, one frame at a time (streaming), gradient-free.
+- Structure learning: online growing heuristic + BMR every 500 frames.
+- BMR: samples rMM components, scores mutual expected log-likelihoods on ancestrally-generated
+  data, and greedily merges if it decreases expected free energy of reward/tMM-switch multinomials.
 - Planning: active inference with expected free energy (utility + information gain).
-- Benchmark: Gameworld 10k — 10 games, 10k steps, 10 seeds. Baselines: BBF, DreamerV3.
+- Benchmark: Gameworld 10k — 10 games, 10k steps, 10 seeds.
 
 ## Class Project (CS 677)
 
-This repo also fulfills a CS 677 Bayesian Statistics final project (100 points total):
+This repo fulfills a CS 677 Bayesian Statistics final project (100 points total):
+
 - Proposal (10 pts) — submitted, see `docs/proposal.md`
 - Presentation (40 pts) — 8-min async video on Discord, slides in `docs/presentation/`
 - Peer Review (10 pts) — review classmates' presentations

@@ -1,68 +1,64 @@
-# AXIOM Replication
+# AXIOM Bayesian Analysis
 
-Replication and extension of **AXIOM: Active eXpanding Inference with Object-centric Models** (Heins, Van de Maele, Tschantz et al., 2025).
+A Bayesian analysis of **AXIOM: Active eXpanding Inference with Object-centric Models** (Heins et al., 2025) for CS 677 Bayesian Statistics.
 
-AXIOM is an active inference agent that learns object-centric world models using four expanding mixture models (sMM, iMM, tMM, rMM) and masters pixel-based games within 10,000 interaction steps — without gradient-based optimization.
+AXIOM is an active inference agent that learns object-centric world models using four expanding Bayesian mixture models (sMM, iMM, tMM, rMM) and masters pixel-based games within 10,000 steps — without gradient-based optimization. This project installs the [official codebase](https://github.com/VersesTech/axiom) and conducts three focused analyses:
+
+1. **Prior and Hyperparameter Sensitivity** — How do prior specifications and model hyperparameters affect perception, dynamics, and reward?
+2. **Bayesian Model Reduction** — How does principled model selection via expected free energy compare to naive pruning?
+3. **Exploration vs. Exploitation** — How does the information-gain term (KL on Dirichlet posteriors) shape learning?
 
 ## Quickstart
 
 ```bash
-make setup                  # Create venv, install deps
+make setup                  # Create venv, install analysis dependencies
 source .venv/bin/activate   # Activate the environment
 make setup-gameworld        # Clone & install Gameworld environments
-make train GAME=bounce      # Train on a single game
-make test                   # Run unit tests
+make setup-axiom            # Clone & install official AXIOM codebase
+make baseline GAME=Explode  # Run a baseline agent
+make test                   # Run tests
 ```
 
 ## Repository Layout
 
 ```
-axiom/              Core library: models, inference, planning, agent
-envs/               Gameworld wrappers and observation preprocessing
-baselines/          BBF, DreamerV3, random agent wrappers
-experiments/        Training scripts, configs, sweep orchestration
-analysis/           Plotting, metrics, Jupyter notebooks for figures
-results/            Output data and generated figures
-tests/              Unit tests (per-module)
-docs/               Paper notes, replication log, report, presentation
+vendor/axiom/       Official AXIOM source (JAX, installed editable)
+vendor/gameworld/   Official Gameworld environment suite
+experiments/        Sweep runner, YAML configs for each analysis phase
+analysis/           Plotting utilities, helpers, Jupyter notebooks
+results/            Output CSVs, BMR logs, generated figures
+tests/              Setup verification, infrastructure tests
+docs/               Roadmap, paper notes, replication log, report, presentation
 ```
 
 ### Data Flow
 
 ```
-experiments/  →  runs training  →  writes to  →  results/
-                                                     
-analysis/     →  reads from results  →  generates  →  results/figures/
+experiments/  →  runs AXIOM with varied configs  →  writes to  →  results/
+                                                                     │
+analysis/     →  reads results  →  generates  →  results/figures/
 ```
 
-- **`tests/`** — Fast unit tests for code correctness. These verify that individual modules
-  are mathematically and programmatically correct (e.g., "does the NIW posterior update
-  produce the right parameters?"). They don't interact with any environment and run in
-  under a second via `make test`.
+- **`experiments/`** — Sweep scripts and YAML configs that run AXIOM (`vendor/axiom/main.py`) with different hyperparameter settings. Each run produces a CSV with per-step reward, expected utility, expected info gain, and component count.
 
-- **`experiments/`** — Scripts and configs that run AXIOM on games. This is where the
-  actual training loop lives: initialize an agent and environment, loop for 10k steps, and
-  log metrics. Per-game hyperparameters live in `experiments/configs/`.
+- **`results/`** — Output of experiments, organized by phase (`prior_sensitivity/`, `bmr_ablation/`, `info_gain_sweep/`). Raw CSVs are gitignored; generated figures in `results/figures/` are tracked.
 
-- **`results/`** — Output of experiments. When a training run finishes, it saves reward
-  arrays, model snapshots, and logged metrics here. Raw data files (`.npy`, `.pkl`, `.csv`)
-  are gitignored; only generated figures in `results/figures/` are tracked.
-
-- **`analysis/`** — Code that consumes results. Reads from `results/` to generate the
-  learning curves, ablation tables, and interpretability plots (replicating Figures 3–4 and
-  Table 1 from the paper). Includes reusable plotting utilities and Jupyter notebooks.
+- **`analysis/`** — Code that consumes results: loads CSVs, computes statistics, generates figures. Jupyter notebooks produce the final plots for the report.
 
 ## Key Commands
 
-| Command                        | Description                               |
-|--------------------------------|-------------------------------------------|
-| `make help`                    | List all available targets                |
-| `make train GAME=X STEPS=N`   | Train AXIOM on game X for N steps         |
-| `make sweep SEEDS=10`         | Run all 10 games across multiple seeds    |
-| `make ablation`               | Run ablation variants (no BMR, no IG, …)  |
-| `make test`                   | Run unit tests                            |
-| `make figures`                | Regenerate plots from saved results       |
-| `make lint`                   | Lint the codebase                         |
+| Command                        | Description                                        |
+|--------------------------------|----------------------------------------------------|
+| `make help`                    | List all available targets                         |
+| `make baseline GAME=X`        | Run a baseline AXIOM agent on game X               |
+| `make sweep-phase1`           | Run prior and hyperparameter sensitivity experiments |
+| `make sweep-phase2`           | Run BMR ablation experiments                       |
+| `make sweep-phase3`           | Run info-gain sweep experiments                    |
+| `make figures`                | Regenerate plots from saved results                |
+| `make test`                   | Run tests                                          |
+| `make lint`                   | Lint analysis and experiment code                  |
+
+All sweep commands accept `GAME=X`, `SEEDS=N`, `STEPS=N`, and `FAST=1` (default) / `FAST=0` (full runs).
 
 ## Games (Gameworld 10k)
 
@@ -73,4 +69,5 @@ See the [Gameworld repo](https://github.com/VersesTech/gameworld) for environmen
 ## References
 
 - Paper: `AXIOM_paper.pdf` in this repo
+- Official code: https://github.com/VersesTech/axiom
 - Gameworld: https://github.com/VersesTech/gameworld
