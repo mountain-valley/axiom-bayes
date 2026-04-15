@@ -72,10 +72,22 @@ def build_extra_args(param: str, value: str, seed: int) -> tuple[list[str], str]
     return [f"--{param}", str(value), "--seed", str(seed)], value
 
 
-def run_single(game: str, steps: int, extra_args: list[str], fast: bool) -> Path:
+def run_single(
+    game: str,
+    steps: int,
+    extra_args: list[str],
+    fast: bool,
+    with_prediction_error: bool = False,
+) -> Path:
     """Run a single AXIOM experiment and return the output CSV path."""
+    entry_script = (
+        str(PROJECT_ROOT / "experiments" / "run_with_prediction_error.py")
+        if with_prediction_error
+        else "main.py"
+    )
     cmd = [
-        sys.executable, "main.py",
+        sys.executable,
+        entry_script,
         "--game", game,
         "--num_steps", str(steps),
     ]
@@ -99,6 +111,7 @@ def run_sweep(
     steps: int,
     fast: bool,
     output_dir: Path,
+    with_prediction_error: bool = False,
 ):
     """Sweep a single parameter across values and seeds."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -107,7 +120,7 @@ def run_sweep(
         for seed in range(seeds):
             print(f"\n=== {param}={val} seed={seed} ===")
             extra, value_label = build_extra_args(param, val, seed)
-            csv_src = run_single(game, steps, extra, fast)
+            csv_src = run_single(game, steps, extra, fast, with_prediction_error=with_prediction_error)
 
             safe_value = _format_value_for_filename(value_label)
             dest = output_dir / f"{param}_{safe_value}_seed{seed}.csv"
@@ -118,7 +131,14 @@ def run_sweep(
                 print(f"  WARNING: expected {csv_src} not found")
 
 
-def run_from_config(config_path: str, game: str, seeds: int, steps: int, fast: bool):
+def run_from_config(
+    config_path: str,
+    game: str,
+    seeds: int,
+    steps: int,
+    fast: bool,
+    with_prediction_error: bool = False,
+):
     """Load a YAML config and run all sweeps defined in it."""
     with open(config_path) as f:
         config = yaml.safe_load(f)
@@ -132,7 +152,16 @@ def run_from_config(config_path: str, game: str, seeds: int, steps: int, fast: b
         sweep_name = sweep.get("name", param)
         print(f"\n--- Sweeping {sweep_name} ({param}): {values} ---")
         param_dir = output_dir / sweep_name
-        run_sweep(param, values, game, seeds, steps, fast, param_dir)
+        run_sweep(
+            param,
+            values,
+            game,
+            seeds,
+            steps,
+            fast,
+            param_dir,
+            with_prediction_error=with_prediction_error,
+        )
 
 
 def main():
@@ -144,13 +173,35 @@ def main():
     parser.add_argument("--seeds", type=int, default=3)
     parser.add_argument("--steps", type=int, default=5000)
     parser.add_argument("--fast", action="store_true", default=False)
+    parser.add_argument(
+        "--with-prediction-error",
+        action="store_true",
+        default=False,
+        help="Use custom runner that logs Next-State Prediction Error column.",
+    )
     args = parser.parse_args()
 
     if args.config:
-        run_from_config(args.config, args.game, args.seeds, args.steps, args.fast)
+        run_from_config(
+            args.config,
+            args.game,
+            args.seeds,
+            args.steps,
+            args.fast,
+            with_prediction_error=args.with_prediction_error,
+        )
     elif args.param and args.values:
         output_dir = RESULTS_DIR / args.param
-        run_sweep(args.param, args.values, args.game, args.seeds, args.steps, args.fast, output_dir)
+        run_sweep(
+            args.param,
+            args.values,
+            args.game,
+            args.seeds,
+            args.steps,
+            args.fast,
+            output_dir,
+            with_prediction_error=args.with_prediction_error,
+        )
     else:
         parser.error("Provide either --config or both --param and --values")
 

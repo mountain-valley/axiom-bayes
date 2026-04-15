@@ -107,7 +107,7 @@ class TestSweepRunner:
         fake_axiom_csv = tmp_path / "explode.csv"
         pd.DataFrame({"Step": [0], "Reward": [1.0]}).to_csv(fake_axiom_csv, index=False)
 
-        def fake_run_single(game, steps, extra_args, fast):
+        def fake_run_single(game, steps, extra_args, fast, with_prediction_error=False):
             return fake_axiom_csv
 
         monkeypatch.setattr(sweep_runner, "run_single", fake_run_single)
@@ -131,3 +131,27 @@ class TestSweepRunner:
         }
         actual_files = {p.name for p in output_dir.glob("*.csv")}
         assert actual_files == expected_files
+
+    def test_run_single_uses_prediction_error_entrypoint(self, monkeypatch):
+        captured = {}
+
+        def fake_subprocess_run(cmd, cwd, env, check):
+            captured["cmd"] = cmd
+            captured["cwd"] = cwd
+            return None
+
+        monkeypatch.setattr(sweep_runner.subprocess, "run", fake_subprocess_run)
+        monkeypatch.setattr(sweep_runner, "AXIOM_DIR", sweep_runner.PROJECT_ROOT / "vendor" / "axiom")
+
+        output = sweep_runner.run_single(
+            game="Explode",
+            steps=10,
+            extra_args=["--seed", "0"],
+            fast=True,
+            with_prediction_error=True,
+        )
+
+        assert output.name == "explode.csv"
+        cmd = captured["cmd"]
+        assert cmd[0].endswith("python")
+        assert cmd[1].endswith("experiments/run_with_prediction_error.py")

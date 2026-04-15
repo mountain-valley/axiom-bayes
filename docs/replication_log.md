@@ -4,6 +4,41 @@ Running record of progress, decisions, and findings. Append new entries at the t
 
 ---
 
+## 2026-04-15 — Prediction-error overhead benchmark documented
+
+- Ran a controlled A/B benchmark to quantify the cost of logging
+  `Next-State Prediction Error`.
+- Benchmark setup:
+  - game: `Explode`
+  - steps: `200`
+  - seed: `0`
+  - planning settings: `--planning_horizon 16 --planning_rollouts 16 --num_samples_per_rollout 1`
+  - BMR settings: `--bmr_pairs 200 --bmr_samples 200`
+  - backend used for this measurement: `JAX_PLATFORMS=cpu`
+- Results:
+  - baseline runner (`vendor/axiom/main.py`): `319.56s`
+  - prediction-error runner (`experiments/run_with_prediction_error.py`): `348.57s`
+  - added overhead: `+29.01s` (~`9.1%`)
+- Added the same summary to `README.md` under Task 1 infrastructure notes.
+
+---
+
+## 2026-04-15 — Optional next-state prediction-error logging added
+
+- Added `experiments/run_with_prediction_error.py`, an optional AXIOM runner that
+  mirrors the standard loop and writes an extra CSV column:
+  `Next-State Prediction Error`.
+- Added `--with-prediction-error` to `experiments/run_sweep.py`:
+  - default behavior remains unchanged (uses upstream `vendor/axiom/main.py`),
+  - when enabled, sweeps call the custom runner to include prediction-error output.
+- Extended `tests/test_infrastructure.py`:
+  - updated mocked sweep test for the new runner signature,
+  - added a test ensuring prediction-error mode selects the custom entrypoint.
+- Updated `README.md` Task 1 infrastructure docs with usage example and column behavior.
+- Existing results are unaffected; this applies to future runs only.
+
+---
+
 ## 2026-04-15 — Task 1 documentation finalized (README usage + outputs)
 
 - Added a dedicated **Task 1 Infrastructure Notes** section to `README.md` to document:

@@ -164,6 +164,15 @@ Example config-driven sweep:
   --game Explode --seeds 3 --steps 5000 --fast
 ```
 
+Enable next-state prediction error logging (optional):
+
+```bash
+.venv/bin/python experiments/run_sweep.py \
+  --config experiments/configs/prior_sensitivity_tmm.yaml \
+  --game Explode --seeds 3 --steps 5000 --fast \
+  --with-prediction-error
+```
+
 ### Output layout and filenames
 
 - Results are written under `results/<experiment_name>/<sweep_name>/`.
@@ -192,6 +201,13 @@ From baseline AXIOM output, the currently available columns are:
 - `Num Components`
 
 `next-state prediction error` is not present in standard CSV output and should be treated as unavailable unless custom logging is added.
+When `--with-prediction-error` is used, the custom runner writes
+`Next-State Prediction Error` as an additional CSV column.
+
+Observed overhead from local A/B benchmarking (CPU, `Explode`, 200 steps, seed 0):
+- baseline runner: `319.56s`
+- with prediction-error logging: `348.57s`
+- relative overhead: ~`9.1%`
 
 ### GPU memory note for sweeps
 
