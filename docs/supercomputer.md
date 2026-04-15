@@ -19,12 +19,27 @@ ssh username@ssh.rc.byu.edu
 Two-factor authentication is required. SSH multiplexing avoids repeated prompts:
 <https://rc.byu.edu/wiki/index.php?page=SSH+Multiplexing>
 
+To avoid typing the full hostname each time, add an entry to `~/.ssh/config`
+on your local machine:
+
+```
+Host orc
+    HostName ssh.rc.byu.edu
+    User <your-username>
+```
+
+Then connect with just `ssh orc`.
+
 ### 1.2 Compute Nodes
 
 Compute nodes have GPUs but **no internet access**. This means:
 - All dependencies must be installed beforehand (on login nodes).
 - `WANDB_MODE=disabled` is mandatory (wandb cannot phone home).
 - No git operations, pip installs, or HTTP requests will succeed.
+
+The login node has a GPU visible in the system but it is **not usable** for
+computation. To force CPU-only execution when testing on a login node, set
+`CUDA_VISIBLE_DEVICES=""` (or use `JAX_PLATFORMS=cpu` for JAX specifically).
 
 **Interactive session** (debugging only — avoid leaving GPUs idle):
 
@@ -117,11 +132,35 @@ export XLA_PYTHON_CLIENT_MEM_FRACTION=0.70
 export XLA_PYTHON_CLIENT_ALLOCATOR=platform
 ```
 
+For testing on a **login node** (CPU-only, no sbatch):
+
+```bash
+export CUDA_VISIBLE_DEVICES=""               # hide the unusable login-node GPU
+export JAX_PLATFORMS=cpu                     # force JAX to CPU backend
+export WANDB_MODE=disabled
+```
+
 ---
 
 ## 4 Running Experiments
 
-### 4.1 Single Run
+### 4.1 Quick Sanity Check (Login Node)
+
+Before submitting batch jobs, run a short CPU smoke test on the login node
+to catch import errors, missing files, or config issues:
+
+```bash
+source .venv/bin/activate
+CUDA_VISIBLE_DEVICES="" JAX_PLATFORMS=cpu WANDB_MODE=disabled \
+    python vendor/axiom/main.py --game Explode --num_steps 20 \
+    --planning_horizon 8 --planning_rollouts 8 --num_samples_per_rollout 1
+```
+
+Cancel with Ctrl-C after a few steps — the goal is to verify the environment
+loads and the run starts, not to produce results. This avoids wasting queue
+time on jobs that fail immediately due to missing dependencies.
+
+### 4.2 Single Run
 
 Submit a single AXIOM run using the provided template:
 
@@ -137,7 +176,7 @@ sbatch --time=02:00:00 --export=GAME=Bounce,STEPS=5000,SEED=0 \
     experiments/slurm/run_single.sh
 ```
 
-### 4.2 Sweep via Array Jobs
+### 4.3 Sweep via Array Jobs
 
 On the cluster, sweeps should run in parallel (one Slurm task per
 param-value-seed combination) rather than sequentially as `run_sweep.py`
@@ -196,7 +235,7 @@ sbatch --array=1-${N} --export=JOBLIST=jobs.txt \
     experiments/slurm/run_sweep_array.sh
 ```
 
-### 4.3 Local vs. Cluster Workflow
+### 4.4 Local vs. Cluster Workflow
 
 | | Local (laptop / single GPU) | Cluster (Slurm) |
 |---|---|---|
@@ -219,7 +258,15 @@ layout:
   Good for `results/` if output volume gets large (symlink `results/` to
   scratch if needed).
 
-### 5.2 Transferring Results
+### 5.2 Cleanup Etiquette
+
+Cluster storage is shared. After completing a round of experiments:
+- Transfer results to your local machine (see below).
+- Delete large intermediate files (`.mp4` videos, scratch CSVs) from the
+  cluster once safely copied.
+- Remove old Slurm logs: `rm slurm_logs/*.out` or keep only recent ones.
+
+### 5.3 Transferring Results
 
 From your local machine:
 
@@ -304,3 +351,9 @@ nvidia-smi                              # GPU utilization on that node
 - **Import errors on compute node**: The venv was likely built with
   different modules loaded. Rebuild with the same `module load` commands
   that your Slurm scripts use.
+- **CUDA version mismatch**: JAX (like PyTorch) is sensitive to the CUDA
+  version it was built against. If `jax[cuda12]` was installed but the
+  cluster loads a different CUDA version via `module load`, you may get
+  silent failures or crashes. Verify with `python -c "import jax; jax.devices()"` 
+  on a compute node. If it fails, reinstall JAX after loading the correct
+  CUDA module.
