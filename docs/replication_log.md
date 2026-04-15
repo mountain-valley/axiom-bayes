@@ -4,6 +4,28 @@ Running record of progress, decisions, and findings. Append new entries at the t
 
 ---
 
+## 2026-04-15 — Task 0 setup fixed (Python 3.11, vendor install, smoke run)
+
+- Recreated `.venv` with Python 3.11.15 (AXIOM/Gameworld require Python `<3.12`).
+- Cloned official upstream repos into `vendor/axiom` and `vendor/gameworld`.
+- Installed editable packages in the project venv:
+  - `pip install -e ".[dev]"`
+  - `pip install -e vendor/gameworld`
+  - `pip install -e vendor/axiom`
+- Added local ffmpeg binary in venv (`.venv/bin/ffmpeg`) so AXIOM's `mediapy` export works.
+- Updated `tests/test_setup.py` to validate real upstream entry points:
+  - AXIOM args parser import via `vendor/axiom/defaults.py`.
+  - Gameworld env creation via `gymnasium.make("Gameworld-Explode-v0")` after `import gameworld.envs`.
+- Verified setup tests: `pytest tests/test_setup.py -q` -> **4 passed**.
+- Verified smoke run:
+  - `python vendor/axiom/main.py --game=Explode --num_steps 100 --planning_horizon 8 --planning_rollouts 8 --num_samples_per_rollout 1`
+  - Produced `explode.csv` and `explode.mp4`.
+  - Copied CSV to `results/baseline/explode_smoke.csv`.
+- Remaining for Task 0 completion: run the full 5k-step baseline and copy final CSV to
+  `results/baseline/explode_baseline.csv`.
+
+---
+
 ## 2026-04-15 — Clean up old stubs; align project with analysis roadmap
 
 - **Deleted** old reimplementation stub directories: `axiom/`, `envs/`, `baselines/`.
