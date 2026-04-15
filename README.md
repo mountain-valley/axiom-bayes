@@ -33,6 +33,68 @@ make setup-gameworld && make setup-axiom
 
 **Requirements:** Python 3.10 or 3.11 (AXIOM's JAX dependency requires `<3.12`).
 
+### Vendor code (Gameworld / AXIOM) and local patches
+
+The `vendor/` directory is gitignored in this repo: `vendor/gameworld` and `vendor/axiom`
+are normal Git clones with their own history. Edits there are **not** visible in
+`git status` at the project root until you record them (see below). If you do not patch
+upstream, use the Quickstart as-is and you can skip the fork steps.
+
+**If you need to change Gameworld or AXIOM and keep those changes reproducible:**
+
+1. On GitHub, fork [VersesTech/gameworld](https://github.com/VersesTech/gameworld) and/or
+   [VersesTech/axiom](https://github.com/VersesTech/axiom) to your account (one fork per
+   repo you intend to patch).
+2. **Point each vendor repo at your fork** so `git push` goes to your GitHub copy, not
+   VersesTech. Pick the case that matches your disk:
+
+   - **You do not have `vendor/gameworld` or `vendor/axiom` yet** (or you are happy to
+     delete them and clone again). From the project root:
+
+     ```bash
+     rm -rf vendor/gameworld vendor/axiom   # omit if those folders do not exist
+     GAMEWORLD_GIT_URL=https://github.com/<you>/gameworld.git make setup-gameworld
+     AXIOM_GIT_URL=https://github.com/<you>/axiom.git make setup-axiom
+     ```
+
+     `make setup-*` only runs `git clone` when the folder is missing, so the env vars
+     must be set **before** that first clone. After this, `origin` is your fork.
+
+   - **Those folders already exist** (for example you followed Quickstart and `origin`
+     is still `VersesTech/...`). `make setup-gameworld` will not clone again, so change
+     the remote in place—same files on disk, new push destination:
+
+     ```bash
+     cd vendor/gameworld && git remote set-url origin https://github.com/<you>/gameworld.git && git fetch origin
+     cd ../axiom && git remote set-url origin https://github.com/<you>/axiom.git && git fetch origin
+     ```
+
+     (Adjust if you only forked one of the two.) Use the first bullet instead if you
+     prefer a clean re-clone from your fork rather than repointing `origin`.
+3. **Develop in the vendor repo:** `cd vendor/gameworld` (or `vendor/axiom`), create a
+   branch if you like, commit, and `git push origin <branch>` so your fork on GitHub
+   holds the commits.
+4. **Pin what this project expects:** back at the project root, run `make vendor-lock`.
+   That rewrites [docs/vendor_versions.txt](docs/vendor_versions.txt) with each vendor’s
+   `origin` URL, branch name, and full commit SHA. Commit `docs/vendor_versions.txt` in
+   **this** repo so collaborators (and future you) know which revision to check out.
+
+To match those pins on another machine after the repos exist:
+`cd vendor/gameworld && git fetch origin && git checkout <commit from vendor_versions.txt>`,
+then repeat for `vendor/axiom`, then `pip install -e vendor/gameworld -e vendor/axiom`.
+
+This workflow keeps patches in your fork while the analysis repo only stores a small
+lock file. **Other approaches (not used in this repo):** a git submodule (records vendor
+SHA inside this repo’s tree but needs `.gitignore` changes), or tracked `.patch` files
+applied during `make setup-*`.
+
+**Cursor / VS Code — Git UI for vendor repos:** The default “open folder” view only
+surfaces the root repo’s Git state; `vendor/` is ignored there. To get **separate Source
+Control entries** for this project, Gameworld, and AXIOM, use **File → Open Workspace
+from File…** and choose [axiom-bayes.code-workspace](axiom-bayes.code-workspace) at the
+repo root. After `make setup-gameworld` and `make setup-axiom`, all three folders exist
+and each nested clone appears in the SCM sidebar under its own root name.
+
 ## Repository Layout
 
 ```
@@ -71,6 +133,7 @@ analysis/     →  reads results  →  generates  →  results/figures/
 | `make figures`                | Regenerate plots from saved results                |
 | `make test`                   | Run tests                                          |
 | `make lint`                   | Lint analysis and experiment code                  |
+| `make vendor-lock`            | Write `docs/vendor_versions.txt` from vendor repos |
 
 All sweep commands accept `GAME=X`, `SEEDS=N`, `STEPS=N`, and `FAST=1` (default) / `FAST=0` (full runs).
 

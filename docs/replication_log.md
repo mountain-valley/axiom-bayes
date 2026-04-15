@@ -4,6 +4,52 @@ Running record of progress, decisions, and findings. Append new entries at the t
 
 ---
 
+## 2026-04-15 — Vendor Git workflow (Gameworld / AXIOM pins)
+
+- Adopted **Option A** (fork or upstream + pinned SHA documented in-repo): added
+  [vendor_versions.txt](vendor_versions.txt) with `origin` URL, branch, and
+  full commit for `vendor/gameworld` and `vendor/axiom`.
+- Added `make vendor-lock` to regenerate that file from the current vendor clones.
+- Extended `Makefile` so first-time clones can use `GAMEWORLD_GIT_URL` and
+  `AXIOM_GIT_URL` (defaults remain VersesTech upstream).
+- Documented workflow in [README.md](../README.md) (Vendor code section).
+
+---
+
+## 2026-04-14 — Task 0 completed (full baseline finished)
+
+- Full baseline run completed via dedicated terminal command:
+  - `WANDB_MODE=disabled make baseline`
+- Verified Task 0 baseline artifacts in `results/baseline/`:
+  - `explode_baseline.csv`
+  - `explode_baseline.mp4`
+- Verified baseline CSV shape and columns:
+  - 5000 rows
+  - columns include: `Step`, `Reward`, `Average Reward`, `Cumulative Reward`, `Expected Utility`, `Expected Info Gain`, `Num Components`
+- Verified roadmap-required test command after Task 0 completion:
+  - `make test` -> **11 passed**.
+- Marked Task 0 complete in `docs/roadmap.md`.
+
+---
+
+## 2026-04-14 — Task 0 verification + baseline output routing
+
+- Re-verified Task 0 setup on this machine by reinstalling editable upstream deps:
+  - `.venv/bin/python -m pip install -e vendor/gameworld -e vendor/axiom`
+- Fixed reproducibility issue in `Makefile` test command:
+  - Switched `PYTEST` from a direct script path to `$(PYTHON) -m pytest` so stale shebangs in `.venv/bin/pytest` do not break `make test` if the project path changes.
+- Verified tests via roadmap-required command:
+  - `make test` -> **11 passed**.
+- Updated baseline artifact handling so outputs land in `results/`:
+  - `make baseline` now copies both `explode.csv` and `explode.mp4` to:
+    - `results/baseline/explode_baseline.csv`
+    - `results/baseline/explode_baseline.mp4`
+- Confirmed the current root `explode.csv` is still the 100-step smoke artifact (100 rows), so full baseline output is not yet present.
+- Full 5000-step baseline run is expected to be long on this host (~90+ min from observed early throughput); hand off to dedicated terminal:
+  - `WANDB_MODE=disabled make baseline`
+
+---
+
 ## 2026-04-15 — Task 0 setup fixed (Python 3.11, vendor install, smoke run)
 
 - Recreated `.venv` with Python 3.11.15 (AXIOM/Gameworld require Python `<3.12`).

@@ -56,7 +56,7 @@ with details on what was done, what worked, and any open issues. If the checklis
 and the log disagree, trust the log.
 
 ### Phase 0: Setup and Baseline
-- [ ] Task 0 — Install AXIOM + Gameworld and verify baseline run
+- [x] Task 0 — Install AXIOM + Gameworld and verify baseline run
 - [ ] Task 1 — Experiment infrastructure (sweep runner, logging, analysis helpers)
 
 ### Phase 1: Prior and Hyperparameter Sensitivity

@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "name": "axiom-bayes",
+      "path": "."
+    },
+    {
+      "name": "gameworld (vendor)",
+      "path": "vendor/gameworld"
+    },
+    {
+      "name": "axiom (vendor)",
+      "path": "vendor/axiom"
+    }
+  ],
+  "settings": {}
+}

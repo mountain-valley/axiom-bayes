@@ -1,0 +1,22 @@
+# Vendor pins for reproducibility (Option A: own fork or upstream + pinned SHA).
+# This repo ignores vendor/ in Git; vendor/gameworld and vendor/axiom are separate
+# clones. After you change code there, commit and push in that repo, then run
+#   make vendor-lock
+# and commit this file in axiom-bayes.
+#
+# First-time clone from your fork (only when the directory does not exist yet):
+#   GAMEWORLD_GIT_URL=https://github.com/<you>/gameworld.git make setup-gameworld
+#   AXIOM_GIT_URL=https://github.com/<you>/axiom.git make setup-axiom
+#
+# Match pins on another machine (after repos exist):
+#   cd vendor/gameworld && git fetch origin && git checkout <VENDOR_GAMEWORLD_COMMIT>
+#   cd vendor/axiom && git fetch origin && git checkout <VENDOR_AXIOM_COMMIT>
+# then pip install -e vendor/gameworld vendor/axiom as usual.
+
+VENDOR_GAMEWORLD_REMOTE=https://github.com/mountain-valley/gameworld.git
+VENDOR_GAMEWORLD_BRANCH=main
+VENDOR_GAMEWORLD_COMMIT=85493c477004ecfd3299b0b053884f23d59a5ec5
+
+VENDOR_AXIOM_REMOTE=https://github.com/mountain-valley/axiom.git
+VENDOR_AXIOM_BRANCH=main
+VENDOR_AXIOM_COMMIT=b99f62599e73294639f1944827bf427909f6c698

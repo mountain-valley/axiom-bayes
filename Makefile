@@ -1,11 +1,15 @@
-PYTHON := .venv/bin/python
-PIP := .venv/bin/pip
-PYTEST := .venv/bin/pytest
+ROOT_DIR := $(CURDIR)
+PYTHON := $(ROOT_DIR)/.venv/bin/python
+PIP := $(ROOT_DIR)/.venv/bin/pip
+PYTEST := $(PYTHON) -m pytest
 
 GAME ?= Explode
 SEEDS ?= 3
 STEPS ?= 5000
 AXIOM_DIR := vendor/axiom
+GAMEWORLD_GIT_URL ?= https://github.com/VersesTech/gameworld.git
+AXIOM_GIT_URL ?= https://github.com/VersesTech/axiom.git
+JAX_PLATFORMS ?= cpu
 
 # Fast CPU settings (override for full runs with FAST=0)
 FAST ?= 1
@@ -15,7 +19,7 @@ else
 FAST_ARGS :=
 endif
 
-.PHONY: setup setup-locked setup-axiom setup-gameworld baseline test test-cov \
+.PHONY: setup setup-locked setup-axiom setup-gameworld vendor-lock baseline test test-cov \
         sweep-phase1 sweep-phase2 sweep-phase3 figures lint clean help
 
 help: ## Show this help message
@@ -41,28 +45,65 @@ setup-locked: ## Create venv with exact pinned versions from requirements-lock.t
 	@echo "Activate with:  source .venv/bin/activate"
 	@echo "Then run:  make setup-gameworld && make setup-axiom"
 
-setup-gameworld: ## Clone and install the Gameworld environment suite
+setup-gameworld: ## Clone and install Gameworld (override clone URL: GAMEWORLD_GIT_URL=...)
 	@if [ ! -d "vendor/gameworld" ]; then \
 		mkdir -p vendor && \
-		git clone https://github.com/VersesTech/gameworld.git vendor/gameworld; \
+		git clone $(GAMEWORLD_GIT_URL) vendor/gameworld; \
 	fi
 	$(PIP) install -e vendor/gameworld
 
-setup-axiom: ## Clone and install the official AXIOM codebase
+setup-axiom: ## Clone and install AXIOM (override clone URL: AXIOM_GIT_URL=...)
 	@if [ ! -d "$(AXIOM_DIR)" ]; then \
 		mkdir -p vendor && \
-		git clone https://github.com/VersesTech/axiom.git $(AXIOM_DIR); \
+		git clone $(AXIOM_GIT_URL) $(AXIOM_DIR); \
 	fi
 	$(PIP) install -e $(AXIOM_DIR)
+
+vendor-lock: ## Write docs/vendor_versions.txt from current vendor/gameworld and vendor/axiom
+	@{ \
+		echo "# Vendor pins for reproducibility (Option A: own fork or upstream + pinned SHA)."; \
+		echo "# This repo ignores vendor/ in Git; vendor/gameworld and vendor/axiom are separate"; \
+		echo "# clones. After you change code there, commit and push in that repo, then run"; \
+		echo "#   make vendor-lock"; \
+		echo "# and commit this file in axiom-bayes."; \
+		echo "#"; \
+		echo "# First-time clone from your fork (only when the directory does not exist yet):"; \
+		echo "#   GAMEWORLD_GIT_URL=https://github.com/<you>/gameworld.git make setup-gameworld"; \
+		echo "#   AXIOM_GIT_URL=https://github.com/<you>/axiom.git make setup-axiom"; \
+		echo "#"; \
+		echo "# Match pins on another machine (after repos exist):"; \
+		echo "#   cd vendor/gameworld && git fetch origin && git checkout <VENDOR_GAMEWORLD_COMMIT>"; \
+		echo "#   cd vendor/axiom && git fetch origin && git checkout <VENDOR_AXIOM_COMMIT>"; \
+		echo "# then pip install -e vendor/gameworld vendor/axiom as usual."; \
+		echo ""; \
+		if [ -d vendor/gameworld/.git ]; then \
+			printf "VENDOR_GAMEWORLD_REMOTE=%s\n" "$$(git -C vendor/gameworld config --get remote.origin.url)"; \
+			printf "VENDOR_GAMEWORLD_BRANCH=%s\n" "$$(git -C vendor/gameworld rev-parse --abbrev-ref HEAD)"; \
+			printf "VENDOR_GAMEWORLD_COMMIT=%s\n" "$$(git -C vendor/gameworld rev-parse HEAD)"; \
+		else \
+			echo "# vendor/gameworld not present — run make setup-gameworld first"; \
+		fi; \
+		echo ""; \
+		if [ -d $(AXIOM_DIR)/.git ]; then \
+			printf "VENDOR_AXIOM_REMOTE=%s\n" "$$(git -C $(AXIOM_DIR) config --get remote.origin.url)"; \
+			printf "VENDOR_AXIOM_BRANCH=%s\n" "$$(git -C $(AXIOM_DIR) rev-parse --abbrev-ref HEAD)"; \
+			printf "VENDOR_AXIOM_COMMIT=%s\n" "$$(git -C $(AXIOM_DIR) rev-parse HEAD)"; \
+		else \
+			echo "# vendor/axiom not present — run make setup-axiom first"; \
+		fi; \
+	} > docs/vendor_versions.txt
+	@echo "Wrote docs/vendor_versions.txt"
 
 # ─── Baseline ────────────────────────────────────────────────────────────────
 
 baseline: ## Run a baseline AXIOM agent (GAME=Explode STEPS=5000)
 	@mkdir -p results/baseline
-	cd $(AXIOM_DIR) && WANDB_MODE=disabled $(PYTHON) main.py \
+	cd $(AXIOM_DIR) && JAX_PLATFORMS=$(JAX_PLATFORMS) WANDB_MODE=disabled $(PYTHON) main.py \
 		--game $(GAME) --num_steps $(STEPS) $(FAST_ARGS)
 	cp $(AXIOM_DIR)/$(shell echo $(GAME) | tr A-Z a-z).csv \
-		results/baseline/$(shell echo $(GAME) | tr A-Z a-z)_baseline.csv || true
+		results/baseline/$(shell echo $(GAME) | tr A-Z a-z)_baseline.csv
+	cp $(AXIOM_DIR)/$(shell echo $(GAME) | tr A-Z a-z).mp4 \
+		results/baseline/$(shell echo $(GAME) | tr A-Z a-z)_baseline.mp4
 	@echo "Baseline saved to results/baseline/"
 
 # ─── Phase 1: Prior Sensitivity ──────────────────────────────────────────────
