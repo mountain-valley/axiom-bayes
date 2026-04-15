@@ -1,77 +1,306 @@
-# 1 Getting Acquainted
+# Supercomputer Guide (BYU RC)
 
-## 1.1 Supercomputer
+This guide covers running AXIOM experiments on the BYU Research Computing
+supercomputer. For general project setup and local usage, see [README.md](../README.md).
 
-### 1.1.1 Requesting an Account
+---
 
-1. Request an account if you do not already have one: [https://rc.byu.edu/](https://rc.byu.edu/)
-2. Please use Dr. Wingate as your sponsor. His username is  `dw87` if needed.
+## 1 Cluster Basics
 
-### 1.1.2 Login Nodes
+### 1.1 Login Nodes
 
-1. The supercomputer contains login and compute nodes. Login nodes have internet access and are used to prepare compute jobs for submission. You can think of login nodes as being CPU machines with internet access. This is also where you will submit jobs using Slurm.
-2. You can login to the supercomputer by following the instructions here: [https://rc.byu.edu/wiki/?id=Logging+In](https://rc.byu.edu/wiki/?id=Logging+In) or `ssh username@ssh.rc.byu.edu`.
-3. Two-factor authentication is required; however SSH multiplexing will make it easier: [https://rc.byu.edu/wiki/index.php?page=SSH+Multiplexing](https://rc.byu.edu/wiki/index.php?page=SSH+Multiplexing).
-4. VS Code can be used by installing the ‘Remote Development’ pack by Microsoft. Going to ‘Remote Explorer side tab’ > SSH > Settings and adding:
-    
-    ```bash
-    Host orc
-        User username
-        HostName ssh.rc.byu.edu
-    ```
-    
-    To login, you can simply use `ssh orc` .
-    
-5. MacOS users can use SSH multiplexing to avoid having to do two-factor authentication every time by adding:
-    
-    ```bash
-    Host orc
-        User username
-        HostName ssh.rc.byu.edu
-        ControlMaster auto
-        ControlPath ~/.ssh/master-%r@%h:%p.socket
-        ControlPersist yes 
-        ForwardX11 yes
-        ServerAliveInterval 300
-        XAuthLocation /opt/X11/bin/xauth
-    ```
-    
-6. See this link to learn more about storage on the supercomputer: [https://rc.byu.edu/wiki/?id=Storage](https://rc.byu.edu/wiki/?id=Storage).
+Login nodes have internet access and are used to prepare compute jobs.
+All `pip install`, `git clone`, and `make setup-*` commands run here.
 
-### 1.1.3 Compute Nodes
+```bash
+ssh username@ssh.rc.byu.edu
+```
 
-1. Compute nodes do not have access to the internet which means that data and models need to be downloaded beforehand and logging needs to be done offline.
-2. Compute nodes can be used in either two ways: interactively or through jobs. Submitting jobs is preferred as letting GPUs sit idle while developing is inefficient. For reference, an A100 GPU costs ~$1.29 on [https://lambda.ai/pricing#on-demand](https://lambda.ai/pricing#on-demand).
-3. Compute nodes can be used interactively by salloc-ing a node with:
-    
-    ```bash
-    salloc --time=4:00:00 --qos=dw87 --gpus=1 --mem=32G --cpus-per-gpu=8
-    ```
-    
-4. Jobs can be submitted using `sbatch` (preferred):
-    
-    ```bash
-    sbatch script.sh
-    ```
-    
-    In this example, arguments can be added in the command line or in the top of the .sh file like:
-    
-    ```bash
-    #SBATCH --job-name=simclr_one
-    #SBATCH --output=slurm_logs/%x_%j.out
-    #SBATCH --gres=gpu:a100:1
-    #SBATCH --cpus-per-task=8
-    #SBATCH --mem=32G
-    #SBATCH --time=04:00:00
-    #SBATCH --qos=dw87
-    ```
-    
-5. A list of jobs can be found using `squeue` which can be useful when paired with `squeue | grep username` or `squeue -u username`.
-6. Jobs can be canceled using `scancel JOBID` or `scancel -u username` to cancel all your jobs.
+Two-factor authentication is required. SSH multiplexing avoids repeated prompts:
+<https://rc.byu.edu/wiki/index.php?page=SSH+Multiplexing>
 
-## 1.2 Recommendation for Deep Learning Workflows
+### 1.2 Compute Nodes
 
-1. The general workflow for deep learning can be summarized by starting small and slowly scaling up while being able to iterate quickly.
-2. For me, this means starting with a Jupyter Notebook on a CPU or small GPU. This is where I figure out the data, model, and evaluation. I’ll also start with a small model and data.
-3. Once I’m at a good spot, I will transition to compute nodes by submitting small jobs and debugging issues that arise such as environment inconsistencies or CUDA errors. If the logs aren’t enough or if I’m consistently running into problems, I will ssh into the compute node of a running job or interact with a compute node directly. Sometimes, job queues can back up which might require salloc-ing a node to debug final errors so that when your job eventually gets executed, it will be successful.   
-4. The last recommendation is to begin with the entire workflow in mind which means thinking about the data, model, training, evaluation, loss, and logging throughout.
+Compute nodes have GPUs but **no internet access**. This means:
+- All dependencies must be installed beforehand (on login nodes).
+- `WANDB_MODE=disabled` is mandatory (wandb cannot phone home).
+- No git operations, pip installs, or HTTP requests will succeed.
+
+**Interactive session** (debugging only — avoid leaving GPUs idle):
+
+```bash
+salloc --time=4:00:00 --qos=dw87 --gpus=1 --mem=32G --cpus-per-gpu=8
+```
+
+**Batch jobs** (preferred for all experiments):
+
+```bash
+sbatch experiments/slurm/run_single.sh
+```
+
+### 1.3 Job Management
+
+```bash
+squeue -u $USER              # list your running/pending jobs
+sacct -j JOBID --format=...  # detailed info on a finished job
+scancel JOBID                # cancel one job
+scancel -u $USER             # cancel all your jobs
+```
+
+---
+
+## 2 First-Time Setup (Login Node)
+
+Run these steps once on a login node. Everything here requires internet.
+
+### 2.1 Clone the Project
+
+```bash
+cd ~  # or your preferred workspace; see §5 for storage notes
+git clone <your-repo-url> axiom-bayes
+cd axiom-bayes
+```
+
+### 2.2 Load Modules
+
+The exact module names depend on what BYU RC provides. Check available
+modules with `module avail` and adjust as needed:
+
+```bash
+module load python/3.11 cuda/12.x cudnn/8.x
+```
+
+Verify the Python version (must be 3.10 or 3.11; AXIOM requires `<3.12`):
+
+```bash
+python3 --version
+```
+
+### 2.3 Create the Environment
+
+```bash
+make setup                    # creates .venv, installs analysis deps
+source .venv/bin/activate
+make setup-gameworld          # clones & installs Gameworld
+make setup-axiom              # clones & installs official AXIOM
+
+# Install CUDA-enabled JAX (the default pip install may pull CPU-only)
+pip install --upgrade "jax[cuda12]"
+```
+
+### 2.4 Verify
+
+```bash
+source .venv/bin/activate
+python -c "import jax; print(jax.default_backend())"   # should print 'gpu' on a compute node
+make test                                                # runs on login node (CPU)
+```
+
+`jax.default_backend()` will return `cpu` on login nodes (no GPU) — that is
+expected. The important thing is that `jax[cuda12]` is installed so it picks
+up the GPU on compute nodes.
+
+---
+
+## 3 Environment Variables
+
+Set these in your Slurm scripts (the templates in `experiments/slurm/`
+already include them):
+
+```bash
+export WANDB_MODE=disabled                    # mandatory — no internet on compute
+export JAX_PLATFORMS=cuda                     # use GPU backend
+
+# Memory management — prevents OOM during long sweeps
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export XLA_PYTHON_CLIENT_MEM_FRACTION=0.70
+export XLA_PYTHON_CLIENT_ALLOCATOR=platform
+```
+
+---
+
+## 4 Running Experiments
+
+### 4.1 Single Run
+
+Submit a single AXIOM run using the provided template:
+
+```bash
+sbatch --export=GAME=Explode,STEPS=10000,SEED=0 \
+    experiments/slurm/run_single.sh
+```
+
+Override `#SBATCH` defaults from the command line:
+
+```bash
+sbatch --time=02:00:00 --export=GAME=Bounce,STEPS=5000,SEED=0 \
+    experiments/slurm/run_single.sh
+```
+
+### 4.2 Sweep via Array Jobs
+
+On the cluster, sweeps should run in parallel (one Slurm task per
+param-value-seed combination) rather than sequentially as `run_sweep.py`
+does locally.
+
+**Step 1 — Generate a job list** from a YAML config:
+
+```bash
+python experiments/slurm/gen_joblist.py \
+    experiments/configs/prior_sensitivity_smm.yaml \
+    --game Explode --seeds 3 --steps 10000 \
+    > jobs.txt
+```
+
+Each line in `jobs.txt` is a tab-separated record:
+`param  value  seed  game  steps  output_dir`
+
+**Step 2 — Submit the array job:**
+
+```bash
+N=$(wc -l < jobs.txt)
+sbatch --array=1-${N} \
+    --export=JOBLIST=jobs.txt \
+    experiments/slurm/run_sweep_array.sh
+```
+
+This launches N parallel tasks. Each task reads its line from `jobs.txt`
+using `$SLURM_ARRAY_TASK_ID` and runs the corresponding AXIOM configuration.
+
+**Full-phase shortcuts** (generate + submit in one go):
+
+```bash
+# Phase 1 — prior sensitivity (all three configs)
+for cfg in experiments/configs/prior_sensitivity_*.yaml; do
+    python experiments/slurm/gen_joblist.py "$cfg" \
+        --game Explode --seeds 3 --steps 10000 > jobs.txt
+    N=$(wc -l < jobs.txt)
+    sbatch --array=1-${N} --export=JOBLIST=jobs.txt \
+        experiments/slurm/run_sweep_array.sh
+done
+
+# Phase 2 — BMR ablation
+python experiments/slurm/gen_joblist.py \
+    experiments/configs/bmr_ablation.yaml \
+    --game Explode --seeds 3 --steps 10000 > jobs.txt
+N=$(wc -l < jobs.txt)
+sbatch --array=1-${N} --export=JOBLIST=jobs.txt \
+    experiments/slurm/run_sweep_array.sh
+
+# Phase 3 — info-gain sweep
+python experiments/slurm/gen_joblist.py \
+    experiments/configs/info_gain_sweep.yaml \
+    --game Explode --seeds 5 --steps 10000 > jobs.txt
+N=$(wc -l < jobs.txt)
+sbatch --array=1-${N} --export=JOBLIST=jobs.txt \
+    experiments/slurm/run_sweep_array.sh
+```
+
+### 4.3 Local vs. Cluster Workflow
+
+| | Local (laptop / single GPU) | Cluster (Slurm) |
+|---|---|---|
+| Runner | `python experiments/run_sweep.py --config ...` | `sbatch --array=... experiments/slurm/run_sweep_array.sh` |
+| Parallelism | Sequential (subprocess per config) | One Slurm task per config |
+| Config format | Same YAML files in `experiments/configs/` | Same YAML files (parsed by `gen_joblist.py`) |
+| Results | Written to `results/` | Written to `results/` (same layout) |
+
+---
+
+## 5 Storage and Data Transfer
+
+### 5.1 Where to Put the Repo
+
+See <https://rc.byu.edu/wiki/?id=Storage> for filesystem details. Typical
+layout:
+
+- **Home (`~`)** — limited quota, backed up. Good for the repo itself.
+- **Scratch / compute storage** — larger quota, faster I/O, not backed up.
+  Good for `results/` if output volume gets large (symlink `results/` to
+  scratch if needed).
+
+### 5.2 Transferring Results
+
+From your local machine:
+
+```bash
+rsync -avz --include='*/' --include='*.csv' --include='*.png' \
+    --exclude='*' \
+    username@ssh.rc.byu.edu:~/axiom-bayes/results/ \
+    ./results/
+```
+
+Or pull everything (including videos):
+
+```bash
+rsync -avz username@ssh.rc.byu.edu:~/axiom-bayes/results/ ./results/
+```
+
+---
+
+## 6 Resource Estimates
+
+Timing references from local benchmarks (update GPU column after first
+cluster run):
+
+| Steps | CPU (fast settings) | GPU (estimated) |
+|-------|---------------------|-----------------|
+| 200   | ~320 s              | TBD             |
+| 5,000 | ~90 min             | TBD             |
+| 10,000| ~3 h                | TBD             |
+
+**Sweep totals** (rough job counts at 3 seeds per config):
+
+| Phase | Configs | Seeds | Total jobs | Est. GPU-hours (TBD) |
+|-------|---------|-------|------------|----------------------|
+| Phase 1 (sMM + tMM + rMM) | 16 + 12 + 15 = 43 | 3 | 129 | — |
+| Phase 2 (BMR ablation)     | 2 + 5 + 5 + 5 = 17 | 3 | 51  | — |
+| Phase 3 (info-gain)        | 6 + 4 = 10          | 3 | 30  | — |
+| **Total**                  |                      |   | **210** | — |
+
+Fill in the GPU column after your first batch completes. Use
+`sacct -j JOBID --format=JobID,Elapsed,MaxRSS,MaxVMSize` to check
+actual wall-time and memory.
+
+---
+
+## 7 Job Monitoring and Debugging
+
+### 7.1 Check Job Status
+
+```bash
+squeue -u $USER                         # running and pending jobs
+squeue -u $USER -t PENDING              # just pending
+sacct --starttime=today -u $USER        # today's completed jobs
+```
+
+### 7.2 Read Logs
+
+Slurm output goes to `slurm_logs/<jobname>_<jobid>.out`:
+
+```bash
+tail -f slurm_logs/axiom_12345.out      # follow a running job
+ls -lt slurm_logs/ | head               # most recent logs
+```
+
+### 7.3 SSH into a Running Compute Node
+
+Useful for checking GPU utilization or debugging hangs:
+
+```bash
+squeue -u $USER                         # note the NODELIST column
+ssh <node-name>                         # e.g. ssh m9-31-4
+nvidia-smi                              # GPU utilization on that node
+```
+
+### 7.4 Common Issues
+
+- **OOM**: Reduce `XLA_PYTHON_CLIENT_MEM_FRACTION` or request more memory
+  (`--mem=64G`).
+- **Job stuck in PENDING**: Check `squeue -u $USER -t PENDING` — the
+  REASON column shows why (e.g., `QOSMaxJobsPerUserLimit`, `Resources`).
+- **Module not found**: Run `module avail <keyword>` on a login node to
+  find the correct module name. Module names change across cluster updates.
+- **Import errors on compute node**: The venv was likely built with
+  different modules loaded. Rebuild with the same `module load` commands
+  that your Slurm scripts use.

@@ -20,7 +20,7 @@ FAST_ARGS :=
 endif
 
 .PHONY: setup setup-locked setup-axiom setup-gameworld vendor-lock baseline test test-cov \
-        sweep-phase1 sweep-phase2 sweep-phase3 figures lint clean help
+        sweep-phase1 sweep-phase2 sweep-phase3 submit-sweep figures lint clean help
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -133,6 +133,25 @@ sweep-phase2: ## Run BMR ablation experiments (Phase 2)
 sweep-phase3: ## Run info-gain sweep experiments (Phase 3)
 	$(PYTHON) experiments/run_sweep.py --config experiments/configs/info_gain_sweep.yaml \
 		--game $(GAME) --seeds $(SEEDS) --steps $(STEPS) $(if $(filter 1,$(FAST)),--fast,)
+
+# ─── Slurm (cluster) ─────────────────────────────────────────────────────────
+
+CONFIG ?=
+submit-sweep: ## Submit a sweep config as Slurm array jobs (CONFIG=... GAME=... SEEDS=... STEPS=...)
+	@if [ -z "$(CONFIG)" ]; then \
+		echo "Usage: make submit-sweep CONFIG=experiments/configs/prior_sensitivity_smm.yaml"; \
+		echo "  Optional: GAME=Explode SEEDS=3 STEPS=10000 FAST=0"; \
+		exit 1; \
+	fi
+	$(PYTHON) experiments/slurm/gen_joblist.py $(CONFIG) \
+		--game $(GAME) --seeds $(SEEDS) --steps $(STEPS) \
+		$(if $(filter 1,$(FAST)),--fast,) > jobs.txt
+	@N=$$(wc -l < jobs.txt); \
+	echo "Generated $$N jobs from $(CONFIG)"; \
+	echo "Submitting: sbatch --array=1-$$N ..."; \
+	sbatch --array=1-$$N --export=JOBLIST=$(CURDIR)/jobs.txt \
+		experiments/slurm/run_sweep_array.sh; \
+	echo "Done. Monitor with: squeue -u $$USER"
 
 # ─── Analysis ────────────────────────────────────────────────────────────────
 

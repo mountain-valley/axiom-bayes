@@ -29,5 +29,9 @@ Thumbs.db
 # Jupyter
 .ipynb_checkpoints/
 
+# Slurm
+slurm_logs/
+jobs.txt
+
 # Misc
 *.log

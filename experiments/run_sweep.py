@@ -164,6 +164,30 @@ def run_from_config(
         )
 
 
+def run_one(
+    param: str,
+    value: str,
+    seed: int,
+    game: str,
+    steps: int,
+    fast: bool,
+    output_dir: Path,
+    with_prediction_error: bool = False,
+):
+    """Run a single (param, value, seed) combination — used by Slurm array jobs."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    extra, value_label = build_extra_args(param, value, seed)
+    csv_src = run_single(game, steps, extra, fast, with_prediction_error=with_prediction_error)
+
+    safe_value = _format_value_for_filename(value_label)
+    dest = output_dir / f"{param}_{safe_value}_seed{seed}.csv"
+    if csv_src.exists():
+        shutil.copy2(csv_src, dest)
+        print(f"  Saved: {dest}")
+    else:
+        print(f"  WARNING: expected {csv_src} not found")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run AXIOM parameter sweeps")
     parser.add_argument("--config", type=str, help="YAML config defining parameter grids")
@@ -179,9 +203,35 @@ def main():
         default=False,
         help="Use custom runner that logs Next-State Prediction Error column.",
     )
+
+    # Single-run mode for Slurm array jobs
+    parser.add_argument(
+        "--run-one",
+        action="store_true",
+        default=False,
+        help="Run a single (param, value, seed) instead of a full sweep. "
+        "Requires --param, --value, --seed, and --output-dir.",
+    )
+    parser.add_argument("--value", type=str, help="Single value (used with --run-one)")
+    parser.add_argument("--seed", type=int, help="Single seed (used with --run-one)")
+    parser.add_argument("--output-dir", type=str, help="Output directory (used with --run-one)")
+
     args = parser.parse_args()
 
-    if args.config:
+    if args.run_one:
+        if not all([args.param, args.value is not None, args.seed is not None, args.output_dir]):
+            parser.error("--run-one requires --param, --value, --seed, and --output-dir")
+        run_one(
+            args.param,
+            args.value,
+            args.seed,
+            args.game,
+            args.steps,
+            args.fast,
+            Path(args.output_dir),
+            with_prediction_error=args.with_prediction_error,
+        )
+    elif args.config:
         run_from_config(
             args.config,
             args.game,
@@ -203,7 +253,7 @@ def main():
             with_prediction_error=args.with_prediction_error,
         )
     else:
-        parser.error("Provide either --config or both --param and --values")
+        parser.error("Provide --run-one, --config, or both --param and --values")
 
 
 if __name__ == "__main__":
