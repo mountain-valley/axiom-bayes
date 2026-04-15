@@ -6,16 +6,20 @@ experiment_name: bmr_ablation
 sweeps:
   # Experiment 1 (Replication): BMR enabled vs disabled
   # Disabled = effectively never prune (999999 >> num_steps)
-  - param: prune_every
+  - name: prune_every_replication
+    param: prune_every
     values: [500, 999999]
 
   # Experiment 2 (Novel): BMR frequency sweep
-  - param: prune_every
+  - name: prune_every_frequency
+    param: prune_every
     values: [250, 500, 1000, 2000, 5000]
 
   # Experiment 3 (Novel): BMR sample count sweep
-  - param: bmr_samples
+  - name: bmr_samples
+    param: bmr_samples
     values: [100, 500, 1000, 2000, 5000]
 
-  - param: bmr_pairs
+  - name: bmr_pairs
+    param: bmr_pairs
     values: [100, 500, 1000, 2000, 5000]

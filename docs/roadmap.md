@@ -57,7 +57,7 @@ and the log disagree, trust the log.
 
 ### Phase 0: Setup and Baseline
 - [x] Task 0 — Install AXIOM + Gameworld and verify baseline run
-- [ ] Task 1 — Experiment infrastructure (sweep runner, logging, analysis helpers)
+- [x] Task 1 — Experiment infrastructure (sweep runner, logging, analysis helpers)
 
 ### Phase 1: Prior and Hyperparameter Sensitivity
 - [ ] Task 2 — sMM prior sensitivity experiments

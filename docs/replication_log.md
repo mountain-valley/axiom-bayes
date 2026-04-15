@@ -4,6 +4,50 @@ Running record of progress, decisions, and findings. Append new entries at the t
 
 ---
 
+## 2026-04-15 — Task 1 documentation finalized (README usage + outputs)
+
+- Added a dedicated **Task 1 Infrastructure Notes** section to `README.md` to document:
+  - how to run `experiments/run_sweep.py` directly and via YAML configs,
+  - expected output directory/filename conventions in `results/`,
+  - special parameter transforms (`scale_factor`, `discrete_alpha_scale`, `reward_alpha`),
+  - verified baseline CSV columns available for downstream analysis,
+  - GPU OOM mitigation environment variables for long sweep batches.
+- This closes remaining user-facing documentation gaps for Task 1 usage.
+
+---
+
+## 2026-04-15 — Task 1 completed (experiment infrastructure + column audit)
+
+- Completed Task 1 infrastructure work:
+  - Enhanced `experiments/run_sweep.py` to support roadmap-specific derived sweeps:
+    - `scale_factor` -> `--scale <scaled_vector>`
+    - `discrete_alpha_scale` -> scaled `--discrete_alphas`
+    - `reward_alpha` -> reward-specific `--discrete_alphas` sweep
+  - Added safer filename normalization for parameter values and optional config `name`
+    field support so repeated parameters (e.g., multiple `prune_every` sweeps) do not
+    overwrite each other.
+  - Updated `experiments/configs/bmr_ablation.yaml` to use named sweep blocks
+    (`prune_every_replication`, `prune_every_frequency`, `bmr_samples`, `bmr_pairs`).
+- Extended `analysis/helpers.py`:
+  - Added `group_by_parameter()` for per-step parameter-comparison plotting.
+  - Upgraded `summary_stats()` to aggregate across seeds and report mean/std/SEM/95% CI.
+  - Kept moving-average helper aligned with paper convention (`window=1000`).
+- Expanded `tests/test_infrastructure.py`:
+  - Added coverage for `group_by_parameter()`.
+  - Added mocked sweep-runner tests validating special-parameter CLI translation and
+    expected output CSV naming/layout.
+- Verified roadmap-required tests:
+  - `make test` -> **14 passed**.
+- Verified currently available AXIOM CSV columns from `vendor/axiom/explode.csv`
+  (5000 rows):
+  - `Step`, `Reward`, `Average Reward`, `Cumulative Reward`,
+    `Expected Utility`, `Expected Info Gain`, `Num Components`
+- Optional-metric availability note for downstream tasks:
+  - Next-state prediction error is **not** present in the standard CSV output and should
+    be treated as unavailable unless extra logging is added in a later task.
+
+---
+
 ## 2026-04-14 — Task 0 run finalized (GPU + env API compatibility)
 
 - Completed full baseline run workflow on this machine using GPU-backed JAX:

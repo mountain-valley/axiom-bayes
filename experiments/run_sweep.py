@@ -35,6 +35,42 @@ FAST_ARGS = [
     "--bmr_samples", "200",
 ]
 
+DEFAULT_SMM_SCALE = [0.075, 0.075, 0.75, 0.75, 0.75]
+DEFAULT_RMM_DISCRETE_ALPHAS = [1e-4, 1e-4, 1e-4, 1e-4, 1.0, 1e-4]
+
+
+def _format_value_for_filename(value: str) -> str:
+    """Sanitize parameter values so they are safe and readable in filenames."""
+    return str(value).replace("/", "-").replace(" ", "")
+
+
+def build_extra_args(param: str, value: str, seed: int) -> tuple[list[str], str]:
+    """Translate sweep params to AXIOM CLI args.
+
+    Returns:
+        extra_args: CLI args to pass to vendor/axiom/main.py
+        value_label: canonical value label used in result filenames
+    """
+    if param == "scale_factor":
+        factor = float(value)
+        scaled = [x * factor for x in DEFAULT_SMM_SCALE]
+        scale_arg = ",".join(f"{x:g}" for x in scaled)
+        return ["--scale", scale_arg, "--seed", str(seed)], value
+
+    if param == "discrete_alpha_scale":
+        factor = float(value)
+        scaled = [x * factor for x in DEFAULT_RMM_DISCRETE_ALPHAS]
+        discrete_alpha_args = [f"{x:g}" for x in scaled]
+        return ["--discrete_alphas", *discrete_alpha_args, "--seed", str(seed)], value
+
+    if param == "reward_alpha":
+        reward_alpha = float(value)
+        alphas = [1e-4, 1e-4, 1e-4, 1e-4, reward_alpha, 1e-4]
+        discrete_alpha_args = [f"{x:g}" for x in alphas]
+        return ["--discrete_alphas", *discrete_alpha_args, "--seed", str(seed)], value
+
+    return [f"--{param}", str(value), "--seed", str(seed)], value
+
 
 def run_single(game: str, steps: int, extra_args: list[str], fast: bool) -> Path:
     """Run a single AXIOM experiment and return the output CSV path."""
@@ -70,10 +106,11 @@ def run_sweep(
     for val in values:
         for seed in range(seeds):
             print(f"\n=== {param}={val} seed={seed} ===")
-            extra = [f"--{param}", str(val), "--seed", str(seed)]
+            extra, value_label = build_extra_args(param, val, seed)
             csv_src = run_single(game, steps, extra, fast)
 
-            dest = output_dir / f"{param}_{val}_seed{seed}.csv"
+            safe_value = _format_value_for_filename(value_label)
+            dest = output_dir / f"{param}_{safe_value}_seed{seed}.csv"
             if csv_src.exists():
                 shutil.copy2(csv_src, dest)
                 print(f"  Saved: {dest}")
@@ -92,8 +129,9 @@ def run_from_config(config_path: str, game: str, seeds: int, steps: int, fast: b
     for sweep in config.get("sweeps", []):
         param = sweep["param"]
         values = [str(v) for v in sweep["values"]]
-        print(f"\n--- Sweeping {param}: {values} ---")
-        param_dir = output_dir / param
+        sweep_name = sweep.get("name", param)
+        print(f"\n--- Sweeping {sweep_name} ({param}): {values} ---")
+        param_dir = output_dir / sweep_name
         run_sweep(param, values, game, seeds, steps, fast, param_dir)
 
 

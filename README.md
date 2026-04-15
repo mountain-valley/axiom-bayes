@@ -137,6 +137,73 @@ analysis/     →  reads results  →  generates  →  results/figures/
 
 All sweep commands accept `GAME=X`, `SEEDS=N`, `STEPS=N`, and `FAST=1` (default) / `FAST=0` (full runs).
 
+## Task 1 Infrastructure Notes
+
+Task 1 adds the reusable experiment pipeline used by later roadmap tasks.
+
+### Sweep runner
+
+- Entry point: `experiments/run_sweep.py`
+- Supports either:
+  - direct parameter/value sweep, or
+  - YAML-defined sweeps in `experiments/configs/*.yaml`
+
+Example direct sweep:
+
+```bash
+.venv/bin/python experiments/run_sweep.py \
+  --param info_gain --values 0.0 0.05 0.1 0.5 1.0 \
+  --game Explode --seeds 3 --steps 5000 --fast
+```
+
+Example config-driven sweep:
+
+```bash
+.venv/bin/python experiments/run_sweep.py \
+  --config experiments/configs/prior_sensitivity_smm.yaml \
+  --game Explode --seeds 3 --steps 5000 --fast
+```
+
+### Output layout and filenames
+
+- Results are written under `results/<experiment_name>/<sweep_name>/`.
+- Each run writes one CSV:
+  - `<param>_<value>_seed<N>.csv`
+- `make sweep-phase1`, `make sweep-phase2`, and `make sweep-phase3` are wrappers around this runner.
+
+### Built-in roadmap-specific parameter transforms
+
+The runner includes special handling for parameters represented as vectors in AXIOM:
+
+- `scale_factor` -> translates to `--scale <scaled_default_vector>`
+- `discrete_alpha_scale` -> translates to scaled `--discrete_alphas ...`
+- `reward_alpha` -> translates to reward-specific `--discrete_alphas ...`
+
+### Verified baseline CSV columns (required for downstream metrics)
+
+From baseline AXIOM output, the currently available columns are:
+
+- `Step`
+- `Reward`
+- `Average Reward`
+- `Cumulative Reward`
+- `Expected Utility`
+- `Expected Info Gain`
+- `Num Components`
+
+`next-state prediction error` is not present in standard CSV output and should be treated as unavailable unless custom logging is added.
+
+### GPU memory note for sweeps
+
+On constrained GPUs, JAX preallocation can cause OOM during long sweep batches.
+If needed, run sweeps with:
+
+```bash
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export XLA_PYTHON_CLIENT_MEM_FRACTION=0.70
+export XLA_PYTHON_CLIENT_ALLOCATOR=platform
+```
+
 ## Games (Gameworld 10k)
 
 Aviate · Bounce · Cross · Drive · Explode · Fruits · Gold · Hunt · Impact · Jump

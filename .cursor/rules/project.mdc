@@ -12,7 +12,7 @@ This project performs a Bayesian analysis of AXIOM (Heins et al., 2025) — an a
 agent that uses Bayesian mixture models, variational inference, Bayesian model reduction,
 and uncertainty-aware planning to master pixel-based games without gradients. Rather than
 reimplementing AXIOM (the source is at `github.com/VersesTech/axiom`), we install the official
-JAX-based codebase and conduct three focused analyses for a CS 677 Bayesian Statistics final project:
+JAX-based codebase and conduct three focused analyses for a CS 677 Bayesian Methods final project:
 
 1. **Prior and hyperparameter sensitivity** — How do prior specifications and model hyperparameters affect performance?
 2. **BMR deep dive** — How does Bayesian model selection via expected free energy compare to naive pruning?
@@ -83,9 +83,8 @@ JAX-based codebase and conduct three focused analyses for a CS 677 Bayesian Stat
 
 ## Class Project (CS 677)
 
-This repo fulfills a CS 677 Bayesian Statistics final project (100 points total):
+This repo fulfills a CS 677 Bayesian Methods final project consisting of:
 
-- Proposal (10 pts) — submitted, see `docs/proposal.md`
 - Presentation (40 pts) — 8-min async video on Discord, slides in `docs/presentation/`
 - Peer Review (10 pts) — review classmates' presentations
 - Report (40 pts) — 4–5 pages, 12pt, 1in margins, single-spaced, in `docs/report/`
