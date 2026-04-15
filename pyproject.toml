@@ -16,7 +16,7 @@ dependencies = [
     "pandas",
     "pyyaml",
     "tqdm",
-    "jax",
+    "jax==0.4.35",
 ]
 
 [project.optional-dependencies]

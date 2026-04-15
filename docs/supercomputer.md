@@ -44,7 +44,7 @@ computation. To force CPU-only execution when testing on a login node, set
 **Interactive session** (debugging only — avoid leaving GPUs idle):
 
 ```bash
-salloc --time=4:00:00 --qos=dw87 --gpus=1 --mem=32G --cpus-per-gpu=8
+salloc --time=4:00:00 --qos=<your-qos> --gpus=1 --mem=32G --cpus-per-gpu=8
 ```
 
 **Batch jobs** (preferred for all experiments):
@@ -82,7 +82,23 @@ The exact module names depend on what BYU RC provides. Check available
 modules with `module avail` and adjust as needed:
 
 ```bash
-module load python/3.11 cuda/12.x cudnn/8.x
+module load python/3.11
+```
+
+If your cluster Python module injects third-party packages into the base
+Python path, that can leak into virtual environments. This project's
+`make setup` now bootstraps the venv with `/usr/bin/python3.11` by default
+to avoid that issue. You can override with:
+
+```bash
+BOOTSTRAP_PYTHON=/path/to/python3.11 make setup
+```
+
+For compute-node Slurm scripts that need system CUDA (not usually required since
+`jax[cuda12]` bundles its own CUDA libs via pip):
+
+```bash
+module load cuda/12.4.1-pw6cogp cudnn/8.9.7.29-12-3s4v3zq
 ```
 
 Verify the Python version (must be 3.10 or 3.11; AXIOM requires `<3.12`):
@@ -94,13 +110,13 @@ python3 --version
 ### 2.3 Create the Environment
 
 ```bash
-make setup                    # creates .venv, installs analysis deps
+make setup                    # creates .venv via /usr/bin/python3.11
 source .venv/bin/activate
 make setup-gameworld          # clones & installs Gameworld
-make setup-axiom              # clones & installs official AXIOM
+make setup-axiom-gpu          # clones/installs AXIOM + pinned CUDA/JAX deps
 
-# Install CUDA-enabled JAX (the default pip install may pull CPU-only)
-pip install --upgrade "jax[cuda12]"
+# If you already ran make setup-axiom, add pinned GPU extras:
+pip install -e "vendor/axiom[gpu]"
 ```
 
 ### 2.4 Verify
@@ -112,8 +128,8 @@ make test                                                # runs on login node (C
 ```
 
 `jax.default_backend()` will return `cpu` on login nodes (no GPU) — that is
-expected. The important thing is that `jax[cuda12]` is installed so it picks
-up the GPU on compute nodes.
+expected. The important thing is that AXIOM's pinned GPU extras are installed
+so JAX picks up the GPU on compute nodes.
 
 ---
 

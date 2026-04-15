@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-gpu=8
 #SBATCH --mem=32G
 #SBATCH --time=04:00:00
-#SBATCH --qos=dw87
+#
 #
 # Run a single AXIOM experiment on a compute node.
 #
@@ -15,6 +15,9 @@
 #
 # Usage:
 #   sbatch --export=GAME=Explode,STEPS=10000,SEED=0 experiments/slurm/run_single.sh
+#   # If your cluster requires explicit QoS/account:
+#   # sbatch --qos=<your-qos> --account=<your-account> --export=GAME=Explode,STEPS=10000,SEED=0 \
+#   #    experiments/slurm/run_single.sh
 #
 #   # With a specific parameter override:
 #   sbatch --export=GAME=Explode,STEPS=10000,SEED=0,PARAM=info_gain,VALUE=0.5 \
@@ -35,8 +38,13 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Slurm may execute a copied script from /var/spool; use submit directory first.
+if [[ -n "${SLURM_SUBMIT_DIR:-}" ]]; then
+    PROJECT_ROOT="$SLURM_SUBMIT_DIR"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+fi
 
 GAME="${GAME:-Explode}"
 STEPS="${STEPS:-10000}"

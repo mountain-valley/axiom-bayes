@@ -1,4 +1,5 @@
 ROOT_DIR := $(CURDIR)
+BOOTSTRAP_PYTHON ?= /usr/bin/python3.11
 PYTHON := $(ROOT_DIR)/.venv/bin/python
 PIP := $(ROOT_DIR)/.venv/bin/pip
 PYTEST := $(PYTHON) -m pytest
@@ -19,7 +20,7 @@ else
 FAST_ARGS :=
 endif
 
-.PHONY: setup setup-locked setup-axiom setup-gameworld vendor-lock baseline test test-cov \
+.PHONY: setup setup-locked setup-axiom setup-axiom-gpu setup-gameworld vendor-lock baseline test test-cov \
         sweep-phase1 sweep-phase2 sweep-phase3 submit-sweep figures lint clean help
 
 help: ## Show this help message
@@ -29,7 +30,7 @@ help: ## Show this help message
 # ─── Setup ───────────────────────────────────────────────────────────────────
 
 setup: ## Create venv and install latest-compatible dependencies
-	python3 -m venv .venv
+	$(BOOTSTRAP_PYTHON) -m venv .venv
 	$(PIP) install --upgrade pip
 	$(PIP) install -e ".[dev]"
 	@echo ""
@@ -37,7 +38,7 @@ setup: ## Create venv and install latest-compatible dependencies
 	@echo "Then run:  make setup-gameworld && make setup-axiom"
 
 setup-locked: ## Create venv with exact pinned versions from requirements-lock.txt
-	python3 -m venv .venv
+	$(BOOTSTRAP_PYTHON) -m venv .venv
 	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements-lock.txt
 	$(PIP) install -e .
@@ -58,6 +59,9 @@ setup-axiom: ## Clone and install AXIOM (override clone URL: AXIOM_GIT_URL=...)
 		git clone $(AXIOM_GIT_URL) $(AXIOM_DIR); \
 	fi
 	$(PIP) install -e $(AXIOM_DIR)
+
+setup-axiom-gpu: setup-axiom ## Install AXIOM with pinned GPU extras
+	$(PIP) install -e "$(AXIOM_DIR)[gpu]"
 
 vendor-lock: ## Write docs/vendor_versions.txt from current vendor/gameworld and vendor/axiom
 	@{ \

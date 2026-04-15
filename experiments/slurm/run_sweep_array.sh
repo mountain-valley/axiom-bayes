@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-gpu=8
 #SBATCH --mem=32G
 #SBATCH --time=04:00:00
-#SBATCH --qos=dw87
+#
 #
 # Slurm array job wrapper for AXIOM parameter sweeps.
 #
@@ -22,14 +22,22 @@
 #   N=$(wc -l < jobs.txt)
 #   sbatch --array=1-${N} --export=JOBLIST=jobs.txt \
 #       experiments/slurm/run_sweep_array.sh
+#   # If your cluster requires explicit QoS/account:
+#   # sbatch --qos=<your-qos> --account=<your-account> --array=1-${N} --export=JOBLIST=jobs.txt \
+#   #       experiments/slurm/run_sweep_array.sh
 #
 # Job list format (tab-separated, one line per task):
 #   param  value  seed  game  steps  output_dir  fast
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Slurm may execute a copied script from /var/spool; use submit directory first.
+if [[ -n "${SLURM_SUBMIT_DIR:-}" ]]; then
+    PROJECT_ROOT="$SLURM_SUBMIT_DIR"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+fi
 
 JOBLIST="${JOBLIST:?JOBLIST environment variable must point to a job list file}"
 
