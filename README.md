@@ -19,6 +19,20 @@ make baseline GAME=Explode  # Run a baseline agent
 make test                   # Run tests
 ```
 
+### Reproducing the Exact Environment
+
+The quickstart above (`make setup`) installs the latest compatible versions.
+To reproduce the exact package versions used during development, use the lock
+file instead:
+
+```bash
+make setup-locked               # Pinned versions from requirements-lock.txt
+source .venv/bin/activate
+make setup-gameworld && make setup-axiom
+```
+
+**Requirements:** Python 3.10 or 3.11 (AXIOM's JAX dependency requires `<3.12`).
+
 ## Repository Layout
 
 ```

@@ -15,7 +15,7 @@ else
 FAST_ARGS :=
 endif
 
-.PHONY: setup setup-axiom setup-gameworld baseline test test-cov \
+.PHONY: setup setup-locked setup-axiom setup-gameworld baseline test test-cov \
         sweep-phase1 sweep-phase2 sweep-phase3 figures lint clean help
 
 help: ## Show this help message
@@ -24,10 +24,19 @@ help: ## Show this help message
 
 # ─── Setup ───────────────────────────────────────────────────────────────────
 
-setup: ## Create venv and install analysis project in editable mode
+setup: ## Create venv and install latest-compatible dependencies
 	python3 -m venv .venv
 	$(PIP) install --upgrade pip
 	$(PIP) install -e ".[dev]"
+	@echo ""
+	@echo "Activate with:  source .venv/bin/activate"
+	@echo "Then run:  make setup-gameworld && make setup-axiom"
+
+setup-locked: ## Create venv with exact pinned versions from requirements-lock.txt
+	python3 -m venv .venv
+	$(PIP) install --upgrade pip
+	$(PIP) install -r requirements-lock.txt
+	$(PIP) install -e .
 	@echo ""
 	@echo "Activate with:  source .venv/bin/activate"
 	@echo "Then run:  make setup-gameworld && make setup-axiom"
