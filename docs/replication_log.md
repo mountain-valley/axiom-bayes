@@ -4,6 +4,23 @@ Running record of progress, decisions, and findings. Append new entries at the t
 
 ---
 
+## 2026-04-14 — Task 0 run finalized (GPU + env API compatibility)
+
+- Completed full baseline run workflow on this machine using GPU-backed JAX:
+  - `WANDB_MODE=disabled JAX_PLATFORMS=cuda make baseline`
+- Resolved CUDA backend bring-up issue by fixing NVIDIA driver/library mismatch
+  (`580.126.09` now loaded for both kernel module and userspace).
+- Installed CUDA-enabled JAX packages in project venv and verified:
+  - `jax.default_backend()` reports `gpu`
+  - `jax.devices()` includes `CudaDevice(id=0)`
+- Updated local editable `vendor/gameworld` env `reset` signatures to
+  `reset(self, *, seed=None, options=None)` and added `super().reset(seed=seed)`
+  calls, eliminating Gymnasium reset API deprecation warnings during run setup.
+- Added baseline stage messages in `Makefile` so post-progress-bar finalization is
+  explicit (`starting AXIOM run` -> `model run complete; finalizing output artifacts`).
+
+---
+
 ## 2026-04-15 — Vendor Git workflow (Gameworld / AXIOM pins)
 
 - Adopted **Option A** (fork or upstream + pinned SHA documented in-repo): added

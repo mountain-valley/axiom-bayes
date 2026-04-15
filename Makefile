@@ -97,14 +97,20 @@ vendor-lock: ## Write docs/vendor_versions.txt from current vendor/gameworld and
 # ─── Baseline ────────────────────────────────────────────────────────────────
 
 baseline: ## Run a baseline AXIOM agent (GAME=Explode STEPS=5000)
-	@mkdir -p results/baseline
+	@start=$$(date +%s); \
+	mkdir -p results/baseline; \
+	echo "[baseline] starting AXIOM run (this progress bar tracks env steps only)"; \
 	cd $(AXIOM_DIR) && JAX_PLATFORMS=$(JAX_PLATFORMS) WANDB_MODE=disabled $(PYTHON) main.py \
-		--game $(GAME) --num_steps $(STEPS) $(FAST_ARGS)
+		--game $(GAME) --num_steps $(STEPS) $(FAST_ARGS); \
+	echo "[baseline] model run complete; finalizing output artifacts"; \
 	cp $(AXIOM_DIR)/$(shell echo $(GAME) | tr A-Z a-z).csv \
-		results/baseline/$(shell echo $(GAME) | tr A-Z a-z)_baseline.csv
+		results/baseline/$(shell echo $(GAME) | tr A-Z a-z)_baseline.csv; \
 	cp $(AXIOM_DIR)/$(shell echo $(GAME) | tr A-Z a-z).mp4 \
-		results/baseline/$(shell echo $(GAME) | tr A-Z a-z)_baseline.mp4
-	@echo "Baseline saved to results/baseline/"
+		results/baseline/$(shell echo $(GAME) | tr A-Z a-z)_baseline.mp4; \
+	end=$$(date +%s); \
+	elapsed=$$((end - start)); \
+	printf "Baseline saved to results/baseline/ (elapsed %02d:%02d:%02d)\n" \
+		$$((elapsed / 3600)) $$(((elapsed % 3600) / 60)) $$((elapsed % 60))
 
 # ─── Phase 1: Prior Sensitivity ──────────────────────────────────────────────
 
