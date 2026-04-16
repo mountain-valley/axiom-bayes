@@ -12,12 +12,11 @@ build/
 .idea/
 .vscode/
 
-# Results data (track figures but not raw data)
+# Results data (track CSVs for reproducibility; ignore large binary formats)
 results/**/*.pkl
 results/**/*.npy
-results/**/*.csv
-!results/.gitkeep
-!results/figures/.gitkeep
+results/**/*.mp4
+results/.tmp_axiom_runs/
 
 # Vendor (cloned repos)
 vendor/
