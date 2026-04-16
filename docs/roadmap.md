@@ -853,7 +853,7 @@ CS 677 student. The narrative arc: AXIOM is a strongly Bayesian/probabilistic ac
 **13a — Introduction (~0.5 page):**
 - AXIOM masters pixel-based games using only Bayesian mixture models — no
   gradient-based learning.
-- The source code is available; rather than reimplementing, we analyze three
+- We analyze three
   Bayesian aspects: prior and hyperparameter sensitivity, model selection, and exploration.
 - Brief preview of findings.
 
