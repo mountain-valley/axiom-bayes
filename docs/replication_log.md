@@ -4,6 +4,131 @@ Running record of progress, decisions, and findings. Append new entries at the t
 
 ---
 
+## 2026-04-15 — Parallel no-video smoke test passed; arrays resubmitted cleanly
+
+- Ran a short end-to-end concurrent smoke test with two local jobs using
+  `experiments/run_sweep.py --run-one` (30 steps, `--fast`) to validate that:
+  - outputs do not collide under the isolated temp working-directory strategy,
+  - CSVs are saved to `results/` correctly.
+- Smoke outputs written successfully:
+  - `results/smoke_no_video/dof_offset_2.0_seed0.csv` (30 rows)
+  - `results/smoke_no_video/dof_offset_50.0_seed1.csv` (30 rows)
+- After successful smoke verification, cancelled and cleanly resubmitted Phase 1 arrays:
+  - cancelled: `11514163`, `11514164`, `11514165`
+  - resubmitted:
+    - Task 2 sMM (5k): `11514396`
+    - Task 3 tMM (5k): `11514397`
+    - Task 4 rMM (5k): `11514398`
+- These runs now use the updated sweep runner defaults (`--no_video` via
+  `run_sweep.py`, unless `--with-video` is explicitly requested).
+
+---
+
+## 2026-04-15 — Added `--no_video` mode for cleaner sweep runs
+
+- Confirmed AXIOM had no built-in no-video CLI flag.
+- Added `--no_video` to AXIOM config/CLI parsing in `vendor/axiom/defaults.py`
+  and wired it into `ExperimentConfig`.
+- Updated `vendor/axiom/main.py` so when `config.no_video` is enabled it:
+  - skips frame accumulation into `observations`,
+  - skips `mediapy.show_videos(...)`,
+  - skips wandb media/scalar logging block at the end.
+- Updated `experiments/run_sweep.py` to pass `--no_video` by default for sweep
+  runs; added `--with-video` to opt back in when needed.
+- This makes cluster sweeps cleaner and avoids ffmpeg/video side-effects while
+  preserving CSV outputs.
+
+---
+
+## 2026-04-15 — Slurm sweep reliability fix + full Phase 1 rerun at 5k
+
+- Diagnosed sweep-output loss on cluster runs:
+  - AXIOM writes CSV first, then attempts video export via `mediapy`/`ffmpeg`.
+  - On compute nodes without `ffmpeg`, `main.py` exits non-zero after CSV write.
+  - `experiments/run_sweep.py` used `subprocess.run(..., check=True)`, so CSV copy
+    into `results/` was skipped on non-zero exit.
+  - All array tasks also shared `cwd=vendor/axiom`, so concurrent runs clobbered
+    `explode.csv` (`mode="w"`), causing race conditions and data loss.
+- Implemented reliability fix in `experiments/run_sweep.py`:
+  - run each AXIOM invocation in an isolated temporary working directory under
+    `results/.tmp_axiom_runs/` (prevents concurrent overwrite),
+  - use `check=False`, copy CSV if present and non-empty even when process exits
+    non-zero (e.g., video export failure),
+  - warn on non-zero exit so failures remain visible in logs.
+- Cancelled broken arrays and resubmitted all Phase 1 sweeps at 5000 steps:
+  - cancelled: `11510724` (Task 2), `11512513` (Task 3), `11512514` (Task 4),
+  - resubmitted:
+    - Task 2 (sMM, 5k): `jobs_task2_smm_5k_rerun.txt` -> `11514163` (48 jobs)
+    - Task 3 (tMM, 5k): `jobs_task3_tmm_5k_rerun.txt` -> `11514164` (42 jobs)
+    - Task 4 (rMM, 5k): `jobs_task4_rmm_5k_rerun.txt` -> `11514165` (60 jobs)
+- Decision: keep full planning/BMR defaults and use 5000 steps across Phase 1
+  for compute-budget consistency.
+
+---
+
+## 2026-04-15 — Tasks 3 & 4 resubmitted at 5k steps; compute-budget policy documented
+
+- **Rationale:** To manage cluster time, adopted a "reduce steps, not planning
+  quality" policy. The AXIOM paper shows most learning occurs in the first 5k
+  steps. Using `--fast` (16 rollouts, 200 BMR pairs) would degrade planner and
+  BMR fidelity, confounding the hyperparameter sensitivity signal. Reducing to
+  5000 steps preserves full inference quality (512 rollouts, 2000 BMR pairs)
+  while halving wall-clock time per job.
+- Cancelled original Task 3 array (`11510773`, 10k steps, 42 jobs).
+  Task `11510773_1` had already completed before cancellation; its 10k-step
+  result is in `results/prior_sensitivity/tmm/` but will not be used for
+  analysis (mismatched step count with the rest of the sweep).
+- Resubmitted Task 3 at 5000 steps:
+  - `jobs_task3_tmm_5k.txt` (42 jobs)
+  - job id: `11512513`
+- Submitted Task 4 (rMM prior sensitivity) at 5000 steps:
+  - `experiments/configs/prior_sensitivity_rmm.yaml` (Explode, 3 seeds)
+  - `jobs_task4_rmm_5k.txt` (60 jobs)
+  - job id: `11512514`
+- Created `results/prior_sensitivity/rmm/` directory.
+- Documented the 5k-step compute-budget guidance in:
+  - `docs/roadmap.md` (Compute Notes section)
+  - `docs/supercomputer.md` (Resource Estimates section)
+
+---
+
+## 2026-04-15 — Task 3 originally launched on Slurm (tMM — cancelled, see above)
+
+- Started Task 3 (`docs/roadmap.md`) experiment execution on the cluster using
+  `experiments/configs/prior_sensitivity_tmm.yaml` (Explode, 3 seeds, 10,000 steps).
+- Created Task 3 results directory before submission:
+  - `results/prior_sensitivity/tmm/`
+- Generated Task 3 array job list with 42 runs (5 `sigma_sqr` + 5
+  `logp_threshold` + 4 `n_total_components`, each x 3 seeds):
+  - `jobs_task3_tmm.txt`
+- Submitted Slurm array job (no `--qos` flag):
+  - `sbatch --array=1-42 --export=JOBLIST=/home/tbday/axiom-bayes/jobs_task3_tmm.txt experiments/slurm/run_sweep_array.sh`
+  - job id: `11510773`
+- At submission time:
+  - baseline `11510639` still running,
+  - Task 2 array `11510724` mostly running with some pending tasks,
+  - Task 3 array `11510773` pending behind current QOS/user node limits.
+
+---
+
+## 2026-04-15 — Task 2 launched on Slurm (sMM prior sensitivity)
+
+- Started Task 2 (`docs/roadmap.md`) experiment execution on the cluster using
+  `experiments/configs/prior_sensitivity_smm.yaml` (Explode, 3 seeds, 10,000 steps).
+- Created missing results directories before submission:
+  - `results/`
+  - `results/prior_sensitivity/smm/`
+- Generated Task 2 array job list with 48 runs (5 `dof_offset` + 6
+  `smm_eloglike_threshold` + 5 `scale_factor`, each x 3 seeds):
+  - `jobs_task2_smm.txt`
+- Submitted Slurm array job (no `--qos` flag):
+  - `sbatch --array=1-48 --export=JOBLIST=/home/tbday/axiom-bayes/jobs_task2_smm.txt experiments/slurm/run_sweep_array.sh`
+  - job id: `11510724`
+- Baseline job `11510639` remains running; Task 2 array is currently pending and
+  queued to start as resources become available.
+
+---
+
 ## 2026-04-15 — Prediction-error overhead benchmark documented
 
 - Ran a controlled A/B benchmark to quantify the cost of logging

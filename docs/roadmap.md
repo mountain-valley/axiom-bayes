@@ -146,6 +146,43 @@ For sweeps, start with fast CPU settings to verify the pipeline, then do final
 runs with full settings. The experiment scripts should support both modes via
 a `--fast` flag.
 
+**Compute-budget guidance (5k vs 10k steps):** When compute time is limited,
+prefer reducing step count to 5000 over using `--fast`. The `--fast` flag
+degrades planning quality (512 → 16 rollouts) and BMR quality (2000 → 200
+pairs/samples), which confounds prior/hyperparameter sensitivity results.
+Reducing to 5000 steps preserves full inference fidelity while still capturing
+the majority of AXIOM's learning — the paper notes that "AXIOM often reaches
+most of its final reward within the first 5k steps." Use "last 1000 steps"
+metrics (steps 4000–5000) for summary statistics. All runs *within* a sweep
+must use the same step count so comparisons are fair; different tasks may use
+different step counts.
+
+---
+
+## Game Selection Rationale
+
+Each analysis phase uses a different primary game, chosen so the Bayesian
+mechanism under study has the largest, most interpretable effect. The paper's
+ablation results (Table 1, Appendix E.2) show that BMR, information gain, and
+prior sensitivity have game-dependent impacts. Using the same game everywhere
+would produce weak signal for Phases 2 and 3.
+
+| Phase | Primary Game | Paper Evidence (Table 1) |
+| ----- | ------------ | ------------------------ |
+| Phase 1 (Priors) | **Explode** | Canonical demo game; moderate object count; already used for baseline and in-progress sweeps. No ablation data for prior sensitivity (all Phase 1 experiments are novel), so any game with nontrivial reward dynamics works. |
+| Phase 2 (BMR) | **Gold** | Cumulative reward drops from 190 to 45 without BMR (76% decline). The 2D free-movement arena requires spatial generalization of reward clusters — exactly what BMR's merge procedure enables. Hunt shows a similar effect (206 → 48) and is a strong secondary choice. |
+| Phase 3 (Info-gain) | **Bounce** | Cumulative reward drops from 27 to 8 without IG (70% decline). The Pong-like mechanics create a natural explore-then-exploit arc: the agent must actively seek ball–paddle interactions to learn dynamics before it can score. |
+
+**Why not the same game for all phases?** Explode shows only a 9% reward drop
+without BMR and a modest IG effect concentrated in the first few hundred steps
+(Figure 4c). Using it for Phases 2–3 would yield flat, uninformative sweep
+curves. Matching each phase to the game where its mechanism matters most
+produces clearer figures and a more compelling report.
+
+**Secondary games (if time permits):** Each task below names an optional
+secondary game for generalization checks. Running a second game adds breadth
+but is not required for a complete analysis.
+
 ---
 
 ## Phase 0: Setup and Baseline
@@ -285,8 +322,8 @@ does not analyze prior or hyperparameter sensitivity.
 **Files:** `experiments/configs/prior_sensitivity_smm.yaml`, analysis notebook
 **Depends on:** Task 1
 
-**What to do:** Run AXIOM on Explode (and optionally Bounce) while varying sMM
-prior hyperparameters one at a time, holding all others at default values.
+**What to do:** Run AXIOM on Explode while varying sMM prior hyperparameters
+one at a time, holding all others at default values.
 
 **Parameters to sweep (from `defaults.py` and `SMMConfig`):**
 
@@ -310,7 +347,8 @@ prior hyperparameters one at a time, holding all others at default values.
    - CLI: `--smm_eloglike_threshold <value>`
 
 **Run configuration:**
-- Games: Explode (primary), Bounce (secondary if time permits)
+- Game: Explode (primary). If time permits: Gold (enables cross-phase
+  comparison with Phase 2) or Bounce.
 - Seeds: 3 per configuration (more for final figures)
 - Steps: 5000 (fast) or 10000 (full)
 
@@ -450,8 +488,10 @@ learning.
 **Figures to produce:**
 
 1. **Reward sensitivity heatmap (one per model):** X-axis = parameter value,
-   Y-axis = game, color = mean cumulative reward (last 1000 steps). Three
-   heatmaps side by side: sMM parameters, tMM parameters, rMM parameters.
+   Y-axis = parameter name (within each model subplot), color = mean cumulative
+   reward (last 1000 steps). Three heatmaps side by side: sMM parameters, tMM
+   parameters, rMM parameters. If secondary games were run, add them as
+   additional rows.
    Save as `results/figures/phase1_reward_heatmap.png`.
 
 2. **Component count vs. parameter value:** Line plots showing how the number
@@ -541,25 +581,32 @@ official AXIOM source code.
 
 **What to do:** Run AXIOM with different BMR configurations.
 
+**Why Gold?** Gold was chosen because the player moves freely across a 2D arena,
+so reward-relevant interactions (collecting coins, hitting dogs) occur at many
+spatial locations. BMR enables spatial generalization by merging single-event
+rMM clusters — without it, cumulative reward drops from 190 to 45 (Table 1),
+the largest BMR effect in the benchmark.
+
 **Experiments:**
 
 1. **(Replication)** **BMR enabled vs. disabled** — corresponds to the "no BMR"
    row in Table 1 and the component-count plot in Figure 4b:
    - Enabled (default): `--prune_every 500`
    - Disabled: `--prune_every 999999` (effectively never)
-   - Games: Explode, Bounce
+   - Game: Gold (primary). If time permits: Hunt (similar 4x BMR effect) or
+     Explode (for comparison with Figure 4b, which uses Explode).
    - Seeds: 3-5
    - Steps: 10000
 
 2. **(Novel)** **BMR frequency sweep:**
    - Values: `--prune_every` in `[250, 500, 1000, 2000, 5000]`
-   - Game: Explode
+   - Game: Gold
    - Seeds: 3
 
 3. **(Novel)** **BMR sample count sweep:**
    - Values: `--bmr_samples` in `[100, 500, 1000, 2000, 5000]`
    - Also vary `--bmr_pairs` with the same values.
-   - Game: Explode
+   - Game: Gold
    - Seeds: 3
 
 **Metrics to extract:**
@@ -591,7 +638,7 @@ fewer than N data points since the last prune.
 
 **Experiments:**
 - Run with count-based pruning at threshold `[1, 5, 10, 50]`.
-- Compare against BMR and no-pruning on the same game/seed combinations.
+- Compare against BMR and no-pruning on Gold with the same seed combinations.
 
 **Bayesian interpretation (for report):**
 - BMR scores merge candidates by sampling data from the generative model and
@@ -612,10 +659,13 @@ fewer than N data points since the last prune.
 
 **Figures to produce:**
 
-1. **(Replication — Figure 4b)** **Component count over time (BMR vs. no-BMR):**
-   Two lines on the same plot showing rMM component count over training steps.
-   The BMR line should show the characteristic sawtooth pattern (growth, then
-   sharp drops at prune intervals).
+1. **(Replication + Extension — Figure 4b)** **Component count over time
+   (BMR vs. no-BMR):** Two lines on the same plot showing rMM component count
+   over training steps. The BMR line should show the characteristic sawtooth
+   pattern (growth, then sharp drops at prune intervals). Note: Figure 4b in
+   the paper uses Explode; reproducing this on Gold is a novel extension that
+   tests whether the same pattern appears in a game where BMR has a much
+   larger impact.
    Save as `results/figures/phase2_component_count.png`.
 
 2. **(Novel)** **Merge-score distribution:** Histogram of expected free energy
@@ -677,9 +727,16 @@ exploration bonus in the planner's objective.
   - 0.0 = pure exploitation (no exploration bonus)
   - 0.1 = default
   - 1.0 = heavy exploration
-- Games: Explode (primary), Bounce (secondary)
+- Game: Bounce (primary). If time permits: Cross (shows the opposite effect —
+  IG hurts due to negative-reward car collisions being information-rich,
+  providing a compelling contrast).
 - Seeds: 3-5
 - Steps: 10000 (or 5000 with fast settings)
+
+**Why Bounce?** Bounce shows the clearest IG benefit in the paper (Table 1:
+27 vs. 8 without IG, a 70% drop). The Pong-like mechanics create a natural
+explore-then-exploit arc: the agent must actively seek ball–paddle interactions
+to learn dynamics before it can reliably score.
 
 **Also sweep (if time permits):**
 - **(Novel — appendix has sample-count ablation but not horizon)**
@@ -706,11 +763,13 @@ using the per-step data from the info-gain sweep.
 
 **Analysis to perform:**
 
-1. **(Replication — Figure 4c)** **Utility vs. info-gain over time:** For the
-   default info_gain=0.1 run, plot expected utility and expected info gain as
-   separate timeseries. The paper's Figure 4c shows info gain decreasing over
-   time (the agent has learned its world model) while utility increases (it has
-   learned to get reward). Verify this pattern.
+1. **(Replication + Extension — Figure 4c)** **Utility vs. info-gain over
+   time:** For the default info_gain=0.1 run, plot expected utility and expected
+   info gain as separate timeseries. The paper's Figure 4c (on Explode) shows
+   info gain decreasing over time while utility increases. Reproducing this on
+   Bounce is a novel extension: we expect the same qualitative pattern but
+   potentially a longer exploration phase given Bounce's richer interaction
+   dynamics. Verify whether the crossover pattern holds.
 
 2. **(Novel)** **Exploration phase duration:** For each info_gain coefficient,
    estimate when the agent transitions from exploration-dominated to
@@ -749,8 +808,9 @@ using the per-step data from the info-gain sweep.
 
 2. **(Replication + Extension — Figure 4c)** **Utility vs. info-gain
    timeseries:** Two-panel plot. Top: expected utility over time. Bottom:
-   expected info gain over time. The default (info_gain=0.1) curve replicates
-   Figure 4c; additional curves for other coefficient values are novel.
+   expected info gain over time. The default (info_gain=0.1) curve on Bounce
+   is a novel extension of Figure 4c (which uses Explode); additional curves
+   for other coefficient values are entirely novel.
    Save as `results/figures/phase3_utility_infogain_timeseries.png`.
 
 3. **(Novel)** **Exploration-exploitation transition:** Plot the

@@ -19,6 +19,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -77,13 +78,22 @@ def run_single(
     steps: int,
     extra_args: list[str],
     fast: bool,
+    dest_csv: Path,
+    no_video: bool = True,
     with_prediction_error: bool = False,
-) -> Path:
-    """Run a single AXIOM experiment and return the output CSV path."""
+) -> None:
+    """Run one AXIOM experiment and persist its CSV output.
+
+    Notes:
+    - Each run executes in an isolated temp directory to avoid concurrent
+      file clobbering on Slurm arrays.
+    - AXIOM can fail after CSV write (e.g., ffmpeg missing during video export);
+      we still copy the CSV if present and non-empty.
+    """
     entry_script = (
         str(PROJECT_ROOT / "experiments" / "run_with_prediction_error.py")
         if with_prediction_error
-        else "main.py"
+        else str(AXIOM_DIR / "main.py")
     )
     cmd = [
         sys.executable,
@@ -93,14 +103,33 @@ def run_single(
     ]
     if fast:
         cmd.extend(FAST_ARGS)
+    if no_video:
+        cmd.append("--no_video")
     cmd.extend(extra_args)
 
     env = {**os.environ, "WANDB_MODE": "disabled"}
     print(f"  Running: {' '.join(cmd)}")
-    subprocess.run(cmd, cwd=str(AXIOM_DIR), env=env, check=True)
+    tmp_root = RESULTS_DIR / ".tmp_axiom_runs"
+    tmp_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=f"{game.lower()}_", dir=str(tmp_root)) as run_dir:
+        result = subprocess.run(cmd, cwd=run_dir, env=env, check=False)
+        csv_src = Path(run_dir) / f"{game.lower()}.csv"
 
-    csv_name = f"{game.lower()}.csv"
-    return AXIOM_DIR / csv_name
+        if csv_src.exists() and csv_src.stat().st_size > 0:
+            dest_csv.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(csv_src, dest_csv)
+            print(f"  Saved: {dest_csv}")
+        else:
+            print(
+                "  WARNING: expected non-empty CSV not found at "
+                f"{csv_src} (return code {result.returncode})"
+            )
+
+        if result.returncode != 0:
+            print(
+                "  WARNING: AXIOM exited non-zero "
+                f"({result.returncode}); keeping copied CSV if available."
+            )
 
 
 def run_sweep(
@@ -111,6 +140,7 @@ def run_sweep(
     steps: int,
     fast: bool,
     output_dir: Path,
+    no_video: bool = True,
     with_prediction_error: bool = False,
 ):
     """Sweep a single parameter across values and seeds."""
@@ -120,15 +150,18 @@ def run_sweep(
         for seed in range(seeds):
             print(f"\n=== {param}={val} seed={seed} ===")
             extra, value_label = build_extra_args(param, val, seed)
-            csv_src = run_single(game, steps, extra, fast, with_prediction_error=with_prediction_error)
 
             safe_value = _format_value_for_filename(value_label)
             dest = output_dir / f"{param}_{safe_value}_seed{seed}.csv"
-            if csv_src.exists():
-                shutil.copy2(csv_src, dest)
-                print(f"  Saved: {dest}")
-            else:
-                print(f"  WARNING: expected {csv_src} not found")
+            run_single(
+                game,
+                steps,
+                extra,
+                fast,
+                dest,
+                no_video,
+                with_prediction_error=with_prediction_error,
+            )
 
 
 def run_from_config(
@@ -137,6 +170,7 @@ def run_from_config(
     seeds: int,
     steps: int,
     fast: bool,
+    no_video: bool = True,
     with_prediction_error: bool = False,
 ):
     """Load a YAML config and run all sweeps defined in it."""
@@ -160,6 +194,7 @@ def run_from_config(
             steps,
             fast,
             param_dir,
+            no_video,
             with_prediction_error=with_prediction_error,
         )
 
@@ -172,20 +207,24 @@ def run_one(
     steps: int,
     fast: bool,
     output_dir: Path,
+    no_video: bool = True,
     with_prediction_error: bool = False,
 ):
     """Run a single (param, value, seed) combination — used by Slurm array jobs."""
     output_dir.mkdir(parents=True, exist_ok=True)
     extra, value_label = build_extra_args(param, value, seed)
-    csv_src = run_single(game, steps, extra, fast, with_prediction_error=with_prediction_error)
 
     safe_value = _format_value_for_filename(value_label)
     dest = output_dir / f"{param}_{safe_value}_seed{seed}.csv"
-    if csv_src.exists():
-        shutil.copy2(csv_src, dest)
-        print(f"  Saved: {dest}")
-    else:
-        print(f"  WARNING: expected {csv_src} not found")
+    run_single(
+        game,
+        steps,
+        extra,
+        fast,
+        dest,
+        no_video,
+        with_prediction_error=with_prediction_error,
+    )
 
 
 def main():
@@ -197,6 +236,12 @@ def main():
     parser.add_argument("--seeds", type=int, default=3)
     parser.add_argument("--steps", type=int, default=5000)
     parser.add_argument("--fast", action="store_true", default=False)
+    parser.add_argument(
+        "--with-video",
+        action="store_true",
+        default=False,
+        help="Enable AXIOM video/media output (disabled by default for sweeps).",
+    )
     parser.add_argument(
         "--with-prediction-error",
         action="store_true",
@@ -217,6 +262,7 @@ def main():
     parser.add_argument("--output-dir", type=str, help="Output directory (used with --run-one)")
 
     args = parser.parse_args()
+    no_video = not args.with_video
 
     if args.run_one:
         if not all([args.param, args.value is not None, args.seed is not None, args.output_dir]):
@@ -229,6 +275,7 @@ def main():
             args.steps,
             args.fast,
             Path(args.output_dir),
+            no_video,
             with_prediction_error=args.with_prediction_error,
         )
     elif args.config:
@@ -238,6 +285,7 @@ def main():
             args.seeds,
             args.steps,
             args.fast,
+            no_video,
             with_prediction_error=args.with_prediction_error,
         )
     elif args.param and args.values:
@@ -250,6 +298,7 @@ def main():
             args.steps,
             args.fast,
             output_dir,
+            no_video,
             with_prediction_error=args.with_prediction_error,
         )
     else:

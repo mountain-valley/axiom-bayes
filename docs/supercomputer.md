@@ -325,6 +325,14 @@ Fill in the GPU column after your first batch completes. Use
 `sacct -j JOBID --format=JobID,Elapsed,MaxRSS,MaxVMSize` to check
 actual wall-time and memory.
 
+**Compute-budget note:** When time-constrained, reduce `--steps` to 5000
+rather than using `--fast`. The `--fast` flag cuts planning rollouts from
+512 to 16 and BMR pairs/samples from 2000 to 200, which confounds
+hyperparameter sensitivity results. Halving step count preserves full
+inference quality and still captures AXIOM's primary learning regime (the
+paper shows most reward is earned in the first 5k steps). All runs within
+a sweep must share the same step count.
+
 ---
 
 ## 7 Job Monitoring and Debugging
